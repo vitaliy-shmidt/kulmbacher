@@ -169,7 +169,8 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 - **Quellen:** Burg Rabenstein, Bad Steben, Coburg, Theater Selb, DAS ZENTRUM Bayreuth, Schützenhaus Münchberg und
   Stadtsteinach, Helmbrechts, Kronach und Bayreuth Tourismus sind analysiert und angebunden (10 aktive Quellen).
   **Zurückgestellt** (Server sperren den User-Agent „Eventcrawler“, keine Umgehung,
-  A85): Neustadt bei Coburg (HTTP 503) und Kulmbach (HTTP 403) – siehe [04-quellen.md](04-quellen.md) „Zurückgestellte /
+  A85): Neustadt bei Coburg (HTTP 503), Kulmbach (HTTP 403) und Hof (HTTP 503); Thurnau zurückgestellt, weil
+  WordPress die TLS-Kette nicht verifiziert (A92) – siehe [04-quellen.md](04-quellen.md) „Zurückgestellte /
   schwer erreichbare Quellen“. Die übrigen Quellen und die geplante Nürnberg/Fürth-Quelle sind dokumentiert, aber
   **nicht technisch analysiert**.
 - **XML-Referenzdatei:** fehlt weiterhin. Der Export ist nach dem dokumentierten Minimalstandard implementiert; ein

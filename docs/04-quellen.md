@@ -22,7 +22,7 @@
 
 Stand 2026-10-15: **10 Quellen sind analysiert und angebunden** (Burg Rabenstein, Bad Steben, Coburg, Theater Selb,
 DAS ZENTRUM Bayreuth, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach, Bayreuth Tourismus). Neustadt bei
-Coburg und Kulmbach sind zurückgestellt, Hof, Thurnau und Nürnberg/Fürth sind nicht analysiert.
+Coburg, Kulmbach, Hof (Sperre der Kennung) und Thurnau (TLS) sind zurückgestellt; für Nürnberg/Fürth fehlt die URL.
 
 | # | Slug (`source`) | Name | Status |
 |---|---|---|---|
@@ -31,14 +31,14 @@ Coburg und Kulmbach sind zurückgestellt, Hof, Thurnau und Nürnberg/Fürth sind
 | 3 | `burg-rabenstein` | Burg Rabenstein / Ahorntal | **funktioniert** (Proof of Concept, 2026-09-24) |
 | 4 | `theater-selb` | Theater Selb | **funktioniert** (2026-10-15) |
 | 5 | `das-zentrum-bayreuth` | DAS ZENTRUM Bayreuth | **funktioniert** (2026-10-15) |
-| 6 | `neustadt-bei-coburg` | Neustadt bei Coburg | **zurückgestellt** (2026-10-15: Server blockiert den Crawler, Abschnitt 6) |
+| 6 | `neustadt-bei-coburg` | Neustadt bei Coburg | **zurückgestellt** (2026-10-15, Recheck 20:17 UTC bestätigt: Website öffentlich crawlbar, aber der Eventcrawler-User-Agent erhält weiterhin 503 mit `Retry-After: 43200`; Abschnitt 6) |
 | 7 | `kulmbach` | Kulmbach | **zurückgestellt** (2026-10-15: Server sperrt den Crawler mit HTTP 403, siehe „Zurückgestellte Quellen“) |
 | 8 | `bayreuth-tourismus` | Bayreuth Tourismus | **funktioniert** (2026-10-15; Termine am Ort DAS ZENTRUM ausgeschlossen, A91) |
 | 9 | `schuetzenhaus-muenchberg` | Schützenhaus Münchberg | **funktioniert** (2026-10-15) |
-| 10 | `hof` | Hof | nicht analysiert |
+| 10 | `hof` | Hof | **zurückgestellt** (2026-10-15: Server sperrt den Crawler mit HTTP 503, siehe „Zurückgestellte Quellen“) |
 | 11 | `stadtsteinach` | Stadtsteinach | **funktioniert** (2026-10-15; 6 von 47 Terminen ohne Ort übersprungen) |
 | 12 | `helmbrechts` | Helmbrechts | **funktioniert** (2026-10-15) |
-| 13 | `thurnau` | Thurnau | nicht analysiert |
+| 13 | `thurnau` | Thurnau | **zurückgestellt** (2026-10-15: TLS-Kette von WordPress nicht verifizierbar, siehe „Zurückgestellte Quellen“) |
 | 14 | `kronach` | Kronach | **funktioniert** (2026-10-15) |
 | 15 | `nuernberg-fuerth` | Nürnberg/Fürth | URL noch nicht bekannt |
 
@@ -58,13 +58,18 @@ curl-User-Agent (keine Browser-Kennung, keine Inhalte des Kalenders).
 
 | Quelle | URL | Status | technischer Grund | was geprüft wurde | bewusst NICHT gemacht | mögliche nächste Schritte |
 |---|---|---|---|---|---|---|
-| Neustadt bei Coburg | https://www.neustadt-bei-coburg.de/freizeit-erholung/kunst-kultur/veranstaltungskalender | zurückgestellt (2026-10-15) | Der Server (TYPO3, Apache) antwortet auf jeden User-Agent mit „Eventcrawler“ reproduzierbar mit **HTTP 503** („maintenance downtime or capacity problems“); neutrale User-Agents erhalten im selben Zeitfenster **HTTP 200**. Kein Website-Ausfall | 10 Minuten lang jede Minute ein Abruf mit Eventcrawler-Kennung (14:04–14:13 Uhr): 10 × 503; Plugin-User-Agent und `Mozilla/5.0 (compatible; Eventcrawler/0.1.0)` ebenfalls 503; neutraler curl-User-Agent um 14:08: 200; robots.txt existiert nicht (404) | keine Browser-Kennung vorgetäuscht; User-Agent des Plugins nicht geändert; Kalender nicht mit neutraler Kennung abgerufen; Sperre nicht umgangen | 1. Stadt kontaktieren und Freigabe anfragen; 2. nach offizieller API / iCal / RSS / Export fragen; 3. Quelle dauerhaft verwerfen (Coburg liefert einen Teil der Neustädter Termine, Vollständigkeit unbekannt). **Nicht:** User-Agent ändern, um die Sperre zu umgehen |
+| Neustadt bei Coburg | https://www.neustadt-bei-coburg.de/freizeit-erholung/kunst-kultur/veranstaltungskalender | zurückgestellt (2026-10-15) | Der Server (TYPO3, Apache) antwortet auf jeden User-Agent mit „Eventcrawler“ reproduzierbar mit **HTTP 503** („maintenance downtime or capacity problems“); neutrale User-Agents erhalten im selben Zeitfenster **HTTP 200**. Kein Website-Ausfall. **Recheck 20:17 UTC:** Website öffentlich crawlbar, aber der identifizierende Eventcrawler-User-Agent wird weiterhin blockiert (12 × 503 mit `Retry-After: 43200`, auch `/seite-2` und robots.txt; ein neutraler Vergleich: 200) | 10 Minuten lang jede Minute ein Abruf mit Eventcrawler-Kennung (14:04–14:13 Uhr): 10 × 503; Plugin-User-Agent und `Mozilla/5.0 (compatible; Eventcrawler/0.1.0)` ebenfalls 503; neutraler curl-User-Agent um 14:08: 200; robots.txt existiert nicht (404) | keine Browser-Kennung vorgetäuscht; User-Agent des Plugins nicht geändert; Kalender nicht mit neutraler Kennung abgerufen; Sperre nicht umgangen | 1. Stadt kontaktieren und Freigabe anfragen; 2. nach offizieller API / iCal / RSS / Export fragen; 3. Quelle dauerhaft verwerfen (Coburg liefert einen Teil der Neustädter Termine, Vollständigkeit unbekannt). **Nicht:** User-Agent ändern, um die Sperre zu umgehen |
 | Kulmbach | https://www.kulmbach.de/veranstaltungen/index.php | zurückgestellt (2026-10-15) | Der Server (nginx) antwortet auf den User-Agent des Plugins reproduzierbar mit **HTTP 403 Forbidden**, auch für `/robots.txt`; ein neutraler User-Agent erhält **HTTP 200**. Die robots.txt nennt „Eventcrawler“ nicht (Sperrliste benannter Bots mit `Disallow: /`, keine Regel für `*`) – die Sperre liegt im Server, vermutlich auf „crawler“ im User-Agent | Veranstaltungsseite und robots.txt mit Plugin-User-Agent: 403; 3 Wiederholungen der Startseite im 20-s-Abstand (14:29–14:30 Uhr): 3 × 403; neutraler curl-User-Agent um 14:30: Startseite 200, robots.txt 200 | wie oben; der Kalender wurde nicht analysiert | 1. Stadt Kulmbach um Freigabe bzw. API/iCal/RSS bitten; 2. Alternative prüfen: Landkreis Kulmbach (`www.landkreis-kulmbach.de`) antwortet dem Plugin-User-Agent mit 200, die TLS-Kette wird aber von OpenSSL/Git-curl nicht verifiziert („self signed certificate in certificate chain“, Windows-curl: ok) – vor einer Analyse prüfen, ob `wp_remote_get()` verbindet; es wäre eine andere Quelle (Landkreis statt Stadt); 3. Quelle verwerfen |
 
-Beobachtungen ohne Analyse (je **ein** Abruf mit dem Plugin-User-Agent, 2026-10-15): `https://www.hof.de/veranstaltungen`
-→ HTTP 503 (vor einer Analyse nach der Prüfmethode oben klären); `https://www.thurnau.de/…/veranstaltungen` → TLS-Kette
-von Git-curl/OpenSSL nicht verifiziert (keine Sperre, vor einer Analyse prüfen, ob `wp_remote_get()` verbindet);
-Stadtsteinach, Helmbrechts und Kronach → HTTP 200 (inzwischen angebunden).
+| Hof | https://www.hof.de/veranstaltungen | zurückgestellt (2026-10-15) | Der Server antwortet auf den User-Agent des Plugins mit **HTTP 503**, auch für `/robots.txt` (über `wp_remote_get()`, 0,4 s, ohne `Server`-Header); ein neutraler curl-User-Agent erhält für `/robots.txt` im selben Zeitraum **HTTP 200**. Gleiches Muster wie Neustadt bei Coburg: Sperre der Kennung, keine Störung | Veranstaltungsseite und robots.txt mit Plugin-User-Agent im Abstand von 20 s: 2 × 503 (zuvor am selben Tag schon einmal 503); ein Vergleichsabruf robots.txt mit neutralem curl: 200 | keine Browser-Kennung, User-Agent nicht geändert, Kalender nicht mit anderer Kennung abgerufen, nicht analysiert | 1. Stadt Hof um Freigabe oder API/iCal/RSS bitten; 2. Quelle verwerfen. **Nicht:** User-Agent ändern |
+| Thurnau | https://www.thurnau.de/freizeit-kultur-tourismus/veranstaltungen | zurückgestellt (2026-10-15) | **TLS: WordPress kann die Zertifikatskette nicht verifizieren.** `wp_remote_get()` mit `sslverify=true` und Plugin-User-Agent → `WP_Error` `http_request_failed`: „cURL error 60: SSL certificate problem: self-signed certificate in certificate chain“ (Startseite, Veranstaltungsseite, robots.txt, `thurnau.de` ohne www; je 0,3–0,5 s). Kette: `thurnau.de` → Let's Encrypt **YR1** → **ISRG Root YR** (vom Server mitgeliefert, selbstsigniert, gültig 03.09.2025–02.09.2045, SHA-256 `E5:7B:7E:6F:…:A8:6F`). Diese Root fehlt im CA-Bundle von WordPress 7.1.2 (`wp-includes/certificates/ca-bundle.crt`, Mozilla-Stand 16.07.2026, 119 Roots, nur ISRG Root X1/X2) und im Windows-Zertifikatsspeicher. Echte Let's-Encrypt-Kette, keine TLS-Prüfung im lokalen Netz | 4 Abrufe über WordPress, Kette mit `openssl s_client` (nur Handshake), Abgleich mit dem WordPress-Bundle; keine Kalenderinhalte abgerufen | **kein** `sslverify=false`, kein `CURLOPT_SSL_VERIFYPEER`, kein eigenes CA-Zertifikat im Plugin, keine Browser-Kennung; kein Adapter gebaut | 1. erneut prüfen, sobald ein WordPress-Update ein CA-Bundle mit ISRG Root YR mitbringt (Mozilla-Root-Programm); 2. Markt Thurnau bitten, eine Kette zu einer verbreiteten Root auszuliefern; 3. eigenes CA-Handling nur nach ausdrücklicher Entscheidung |
+
+Frühere Beobachtungen (je **ein** Abruf mit dem Plugin-User-Agent, 2026-10-15): Hof 503 und Thurnau TLS – inzwischen
+geklärt (Tabelle oben); Stadtsteinach, Helmbrechts und Kronach → HTTP 200 (inzwischen angebunden).
+
+**TLS-Prüfregel (seit 2026-10-15):** Maßgeblich ist allein, ob `wp_remote_get()` mit `sslverify=true` und dem
+CA-Bundle von WordPress verbindet – nicht Git-curl (ältere CA-Liste; bei Bayreuth Tourismus falsch negativ) und nicht
+Windows-curl. Scheitert WordPress, wird die Quelle zurückgestellt; die Zertifikatsprüfung wird nie abgeschaltet.
 
 ### Zeichenkodierung der angebundenen Quellen (geprüft 2026-09-30)
 
@@ -779,6 +784,20 @@ Zusammenfassung und nächste Schritte: Abschnitt „Zurückgestellte / schwer er
 | Startseite mit curl-Standard-User-Agent | 200 |
 | robots.txt mit neutralem User-Agent | 404 (TYPO3-Fehlerseite) – es gibt **keine** robots.txt |
 
+### Recheck 2026-10-15, 20:17 UTC (Anlass: Seiten sind öffentlich und von Suchmaschinen crawlbar)
+
+| Anfrage (über `wp_remote_get()`, exakt der Plugin-User-Agent `Eventcrawler/0.1.0 (WordPress; <home_url>)`, 3 Runden, je 3 s bzw. 10 s Pause) | Ergebnis |
+|---|---|
+| Startseite `/` | 3 × **503**, 0,34–0,40 s, `Server: Apache`, **`Retry-After: 43200`**, keine Weiterleitung |
+| Veranstaltungskalender | 3 × **503**, 0,34–0,47 s, `Retry-After: 43200` |
+| `/veranstaltungskalender/seite-2` | 3 × **503**, 0,35–0,37 s, `Retry-After: 43200` |
+| `/robots.txt` | 3 × **503**, 0,35–0,36 s, `Retry-After: 43200` |
+| Antworttext | Apache-Standardseite „503 Service Unavailable … maintenance downtime or capacity problems“ (339 Bytes); keine WAF-/Bot-Header (`x-*`, `cf-*`) |
+| **ein** Diagnose-Vergleich: Veranstaltungskalender mit neutralem curl-User-Agent | **200**, 0,44 s, 276 661 Bytes, `Server: Apache` |
+
+**Website öffentlich crawlbar, aber der identifizierende Eventcrawler-User-Agent wird weiterhin blockiert** (12 von 12
+Abrufen 503, Vergleich 200). Status bleibt „zurückgestellt“; kein Adapter, keine Umgehung.
+
 Folgerung: Der Server weist gezielt Anfragen ab, deren User-Agent „Eventcrawler“ (vermutlich „crawler“) enthält. Es
 ist **keine** Störung der Website. Der Kalender wurde deshalb **nicht** analysiert, ein Adapter wird nicht gebaut.
 
@@ -1031,11 +1050,11 @@ Nicht gespeichert: Kategorie, Einlass, Ticketlink (okticket.de / oktx.de), Preis
 |---|---|
 | Name | Hof |
 | URL | https://www.hof.de/veranstaltungen |
-| Status | nicht analysiert |
-| Parser vorhanden | nein |
-| Detailseite vorhanden | noch zu prüfen |
-| externe ID bekannt | noch zu prüfen |
-| Bemerkungen | – |
+| Status | **zurückgestellt** (2026-10-15): HTTP 503 für die Eventcrawler-Kennung, 200 für neutralen curl-User-Agent – Sperre, keine Umgehung (A85) |
+| Parser vorhanden | nein (bewusst nicht gebaut) |
+| Detailseite vorhanden | nicht analysiert |
+| externe ID bekannt | nicht analysiert |
+| Bemerkungen | Details und nächste Schritte: „Zurückgestellte / schwer erreichbare Quellen“ |
 
 ## 11. Stadtsteinach
 
@@ -1259,13 +1278,13 @@ Nicht gespeichert: Preis, Veranstalter mit Telefon und Webseite (strukturiert vo
 
 | Eigenschaft | Wert |
 |---|---|
-| Name | Thurnau |
+| Name | Thurnau (Markt Thurnau) |
 | URL | https://www.thurnau.de/freizeit-kultur-tourismus/veranstaltungen |
-| Status | nicht analysiert |
-| Parser vorhanden | nein |
-| Detailseite vorhanden | noch zu prüfen |
-| externe ID bekannt | noch zu prüfen |
-| Bemerkungen | – |
+| Status | **zurückgestellt** (2026-10-15): `wp_remote_get()` mit `sslverify=true` → cURL error 60 „self-signed certificate in certificate chain“; Root „ISRG Root YR“ nicht im CA-Bundle von WordPress (A92) |
+| Parser vorhanden | nein (bewusst nicht gebaut) |
+| Detailseite vorhanden | nicht analysiert (keine Inhalte abgerufen) |
+| externe ID bekannt | nicht analysiert |
+| Bemerkungen | Bayreuth Tourismus liefert keine Termine in Thurnau (nur Bayreuth-Stadt; ein Vortrag „Der Schlossgarten von Thurnau“ findet in Bayreuth statt). Details: „Zurückgestellte / schwer erreichbare Quellen“ |
 
 ## 14. Kronach
 

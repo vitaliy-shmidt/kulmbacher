@@ -315,8 +315,8 @@ schwer erreichbare Quellen“. Grundsatz A85: Sperren werden nicht umgangen.
 - [ ] Neustadt bei Coburg – HTTP 503 für „Eventcrawler“ → Stadt kontaktieren / API, iCal, RSS anfragen / verwerfen
 - [ ] Kulmbach – HTTP 403 für „Eventcrawler“ → Stadt kontaktieren / Landkreis Kulmbach prüfen / verwerfen
 - [ ] **Kunde:** Grundsatzfrage: Sollen gesperrte Betreiber angeschrieben werden (wer, mit welcher Kennung/Kontakt-URL)?
-- [ ] Vor jeder neuen Quelle zuerst den Zugriff mit dem Plugin-User-Agent prüfen (2026-10-15, je ein Abruf: Hof 503,
-      Thurnau TLS-Kette nicht verifizierbar, Stadtsteinach/Helmbrechts/Kronach 200)
+- [ ] Vor jeder neuen Quelle zuerst den Zugriff mit dem Plugin-User-Agent **über `wp_remote_get()`** prüfen (TLS-Maßstab
+      ist WordPress, A92). Stand 2026-10-15: Hof 503 (Sperre), Thurnau TLS (zurückgestellt), Stadtsteinach/Helmbrechts/Kronach 200
 
 ## Phase 6 – weitere Quellen ← NÄCHSTER SCHRITT
 
@@ -340,10 +340,12 @@ Quellen danach schrittweise integrieren: jeweils analysieren → Adapter → tes
       oder Landkreis Kulmbach als Alternative prüfen lassen (TLS-Kette vorher klären)
 - [x] Bayreuth Tourismus (2026-10-15, siehe Abschnitt „Zehnte aktive Quelle: Bayreuth Tourismus“)
 - [x] Schützenhaus Münchberg (2026-10-15, siehe Abschnitt „Sechste aktive Quelle: Schützenhaus Münchberg“)
-- [ ] Hof
+- [ ] Neustadt bei Coburg – Recheck 2026-10-15 20:17 UTC: weiterhin 503 nur für die Eventcrawler-Kennung (12/12, `Retry-After: 43200`), neutral 200 → zurückgestellt
+- [ ] Hof – zurückgestellt (2026-10-15: HTTP 503 nur für die Eventcrawler-Kennung; Freigabe bei der Stadt anfragen)
 - [x] Stadtsteinach (2026-10-15, siehe Abschnitt „Siebte aktive Quelle: Stadtsteinach“)
 - [x] Helmbrechts (2026-10-15, siehe Abschnitt „Achte aktive Quelle: Helmbrechts“)
-- [ ] Thurnau
+- [ ] Thurnau – zurückgestellt (2026-10-15: TLS, Root „ISRG Root YR“ fehlt im CA-Bundle von WordPress; nach
+      WordPress-Update erneut prüfen oder Markt Thurnau ansprechen)
 - [x] Kronach (2026-10-15, siehe Abschnitt „Neunte aktive Quelle: Kronach“)
 - [ ] Nürnberg/Fürth (URL vom Auftraggeber nötig; Ortsregel Nürnberg/Fürth)
 

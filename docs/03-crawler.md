@@ -687,3 +687,14 @@ Der Ausschluss des Orts DAS ZENTRUM (A91) liegt vollständig im Adapter.
 - Strikt nacheinander, „Quelle 1 von 10“ bis „Quelle 10 von 10“; Browser-AJAX stabil.
 - Bayreuth Tourismus verlängert den Gesamtlauf kaum (API, eine Seite). Längster Einzelrequest weiter Stadtsteinach /
   Helmbrechts (~76 s, 64 % von 120 s).
+
+## 22. Thurnau und Hof zurückgestellt (2026-10-15)
+
+- **Thurnau:** TLS-Prüfung ausschließlich über WordPress (`wp_remote_get()`, `sslverify=true`, Plugin-User-Agent,
+  WordPress 7.1.2, PHP 8.3.12, cURL 8.7.0 / OpenSSL 3.0.15): Startseite, Veranstaltungsseite, robots.txt und
+  `thurnau.de` → jeweils `WP_Error` „cURL error 60: SSL certificate problem: self-signed certificate in certificate
+  chain“. Ursache: Die Kette endet in „ISRG Root YR“, die im CA-Bundle von WordPress fehlt (04-quellen.md). Kein Adapter,
+  keine Codeänderung (A92).
+- **Hof:** über WordPress 2 × HTTP 503 (Veranstaltungsseite, robots.txt), neutraler curl-User-Agent für robots.txt: 200
+  → Sperre der Kennung (A85), zurückgestellt.
+- Aktive Quellen unverändert 10; kein Live-Crawl, keine Änderung an Plugin oder Tests in dieser Phase.
