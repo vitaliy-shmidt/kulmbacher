@@ -1,0 +1,2 @@
+# Projektregel: LF-Zeilenenden (docs/README.md); verhindert CRLF beim Auschecken unter Windows
+* text=auto eol=lf

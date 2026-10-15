@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "name": "Kulmbacher-Project",
+            "path": "."
+        },
+		{
+            "name": "Kulmbacher WP-Plugin",
+            "path": "wp-plugin"
+        },
+		{
+            "name": "Kulmbacher Dokumentation",
+            "path": "docs"
+        }
+    ],
+}

@@ -1,0 +1,142 @@
+/**
+ * Eventcrawler – kleines Admin-CSS für das Detail-Modal der Veranstaltungsliste (docs/06-admin.md, Abschnitt 11).
+ * Nur Layout; Buttons und Farben im Stil des WordPress-Admins.
+ */
+.eventcrawler-modal {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 100050; /* über Admin-Bar und Menü */
+	background: rgba( 0, 0, 0, 0.6 );
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.eventcrawler-modal[hidden] {
+	display: none;
+}
+
+body.eventcrawler-modal-open {
+	overflow: hidden;
+}
+
+.eventcrawler-modal__dialog {
+	background: #fff;
+	width: 100%;
+	max-width: 860px;
+	max-height: 100%;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 3px 30px rgba( 0, 0, 0, 0.3 );
+	outline: none;
+}
+
+.eventcrawler-modal__header,
+.eventcrawler-modal__footer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 16px;
+}
+
+.eventcrawler-modal__header {
+	border-bottom: 1px solid #dcdcde;
+}
+
+.eventcrawler-modal__header h2 {
+	margin: 0;
+	flex: 1;
+	font-size: 1.3em;
+}
+
+.eventcrawler-modal__x {
+	background: none;
+	border: 0;
+	cursor: pointer;
+	padding: 0 6px;
+	font-size: 28px;
+	line-height: 1;
+	color: #50575e;
+}
+
+.eventcrawler-modal__x:hover,
+.eventcrawler-modal__x:focus {
+	color: #135e96;
+}
+
+.eventcrawler-modal__footer {
+	border-top: 1px solid #dcdcde;
+}
+
+.eventcrawler-modal__copy-status {
+	flex: 1;
+	color: #50575e;
+}
+
+.eventcrawler-modal__body {
+	overflow-y: auto;
+	padding: 4px 16px 16px;
+}
+
+.eventcrawler-modal__error {
+	color: #b32d2e;
+	font-weight: 600;
+}
+
+.eventcrawler-db-fields {
+	display: grid;
+	grid-template-columns: minmax( 120px, max-content ) 1fr;
+	margin: 0;
+}
+
+.eventcrawler-db-fields dt,
+.eventcrawler-db-fields dd {
+	margin: 0;
+	padding: 6px 8px;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.eventcrawler-db-fields dt {
+	font-weight: 600;
+	font-family: Consolas, Monaco, monospace;
+}
+
+.eventcrawler-db-fields dd {
+	white-space: pre-wrap; /* Originaltext vollständig, lange Werte umbrechen */
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.eventcrawler-mono {
+	font-family: Consolas, Monaco, monospace;
+}
+
+.eventcrawler-db-null {
+	font-style: italic;
+	color: #8c8f94;
+}
+
+.eventcrawler-db-hint {
+	color: #50575e;
+}
+
+.eventcrawler-copy-area {
+	position: absolute;
+	left: -9999px;
+}
+
+@media screen and ( max-width: 600px ) {
+	.eventcrawler-db-fields {
+		grid-template-columns: 1fr;
+	}
+
+	.eventcrawler-db-fields dt {
+		border-bottom: 0;
+		padding-bottom: 0;
+	}
+}

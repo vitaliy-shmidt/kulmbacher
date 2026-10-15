@@ -1,0 +1,17 @@
+# Nicht Teil dieses Repositorys
+# Kundenplugin „WP Kulmbacher Land“ (nur lokale Referenz, fremder Code, siehe docs/09-wpem-integration.md)
+/wp-events-manager/
+# Kunden-Exportdatei (lokale Formatreferenz, siehe docs/07-export.md)
+/veranstaltungen-export-*.xml
+
+# Lokale und temporäre Dateien
+*.log
+*.tmp
+*.bak
+*.sql
+*.zip
+.env
+.env.*
+.DS_Store
+Thumbs.db
+/.vscode/
