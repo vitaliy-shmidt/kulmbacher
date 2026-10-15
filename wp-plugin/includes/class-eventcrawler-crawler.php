@@ -44,6 +44,7 @@ class Eventcrawler_Crawler {
 				new Eventcrawler_Source_Helmbrechts(),
 				new Eventcrawler_Source_Kronach(),
 				new Eventcrawler_Source_Bayreuth_Tourismus(),
+				new Eventcrawler_Source_Concertbuero_Franken(),
 			)
 		);
 

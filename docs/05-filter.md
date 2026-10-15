@@ -156,7 +156,12 @@ Hinweise und Risiken:
   **Informationsveranstaltungen der Stadtverwaltung** als politisch gelten; ohne konkrete Vorgabe gibt es dafür keine Regel.
 - Eine KI-Klassifikation ist ausdrücklich **nicht** Teil des MVP.
 
-## 5. Sonderregel Nürnberg/Fürth: nur Nürnberg und Fürth (implementiert, noch ohne Quelle)
+## 5. Sonderregel Nürnberg/Fürth: nur Nürnberg und Fürth (implementiert, Quelle Concertbüro Franken)
+
+**Seit 2026-10-15 (A93):** Die Quelle ist Concertbüro Franken. Die verbindliche, **exakte** Auswahl trifft der Adapter
+(nur „Nürnberg“ oder „Fürth“ als Stadt der Zeile „Stadt • Ort“; Präfix-/Ortsteilformen und Umschrift werden dort
+abgelehnt); andere Städte erreichen den Crawler nicht. Die hier beschriebene zentrale Ortsregel (toleranter, siehe
+unten) ist für diese Quelle nur zweite Sicherung und hat im Live-Crawl nichts ausgeschlossen.
 
 Diese Ortsregel ist **keine** Filterregel im Backend. Sie bleibt im Code und wird vor den Textregeln geprüft.
 

@@ -20,9 +20,11 @@
 
 ## Übersicht
 
-Stand 2026-10-15: **10 Quellen sind analysiert und angebunden** (Burg Rabenstein, Bad Steben, Coburg, Theater Selb,
-DAS ZENTRUM Bayreuth, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach, Bayreuth Tourismus). Neustadt bei
-Coburg, Kulmbach, Hof (Sperre der Kennung) und Thurnau (TLS) sind zurückgestellt; für Nürnberg/Fürth fehlt die URL.
+Stand 2026-10-15: **11 Quellen sind analysiert und angebunden** (Burg Rabenstein, Bad Steben, Coburg, Theater Selb,
+DAS ZENTRUM Bayreuth, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach, Bayreuth Tourismus, Concertbüro Franken). Neustadt bei
+Coburg, Kulmbach, Hof (Sperre der Kennung) und Thurnau (TLS) sind zurückgestellt. Concertbüro Franken (Nürnberg/Fürth)
+ist seit 2026-10-15 angebunden. **Damit ist die ursprüngliche Quellenliste (15 Quellen) vollständig technisch geprüft:
+11 aktiv, 4 zurückgestellt, 0 ungeprüft.**
 
 | # | Slug (`source`) | Name | Status |
 |---|---|---|---|
@@ -40,9 +42,9 @@ Coburg, Kulmbach, Hof (Sperre der Kennung) und Thurnau (TLS) sind zurückgestell
 | 12 | `helmbrechts` | Helmbrechts | **funktioniert** (2026-10-15) |
 | 13 | `thurnau` | Thurnau | **zurückgestellt** (2026-10-15: TLS-Kette von WordPress nicht verifizierbar, siehe „Zurückgestellte Quellen“) |
 | 14 | `kronach` | Kronach | **funktioniert** (2026-10-15) |
-| 15 | `nuernberg-fuerth` | Nürnberg/Fürth | URL noch nicht bekannt |
+| 15 | `concertbuero-franken` | Concertbüro Franken (Nürnberg/Fürth) | **funktioniert** (2026-10-15; nur Nürnberg und Fürth, A93) |
 
-Die Slugs sind ein Vorschlag. Final festgelegt sind bisher `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach` und `bayreuth-tourismus`. Sobald Daten mit
+Die Slugs sind ein Vorschlag. Final festgelegt sind bisher `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach`, `bayreuth-tourismus` und `concertbuero-franken`. Sobald Daten mit
 einem Slug gespeichert sind, darf er nicht mehr geändert werden.
 
 ## Zurückgestellte / schwer erreichbare Quellen
@@ -1397,17 +1399,99 @@ Nicht gespeichert: Kategorie, Veranstalter, Telefon, E-Mail, Langtext, Bild, Koo
 - Monatskürzel für März noch nicht beobachtet; weicht es von „Mär“ ab, werden März-Termine als fehlerhaft gezählt.
 - Laufzeit ~70 s; wächst mit der Zahl verschiedener Veranstaltungen im Fenster.
 
-## 15. Nürnberg/Fürth
+## 15. Concertbüro Franken (Quelle für Nürnberg/Fürth)
 
 | Eigenschaft | Wert |
 |---|---|
-| Name | Nürnberg/Fürth |
-| URL | **noch nicht bekannt**. Die Quelle „gibt es bzw. wird es geben“ und muss vom Auftraggeber benannt werden |
-| Status | nicht analysiert (URL fehlt) |
-| Parser vorhanden | nein |
-| Detailseite vorhanden | noch zu prüfen |
-| externe ID bekannt | noch zu prüfen |
-| Bemerkungen | **Verbindliche Ortsregel:** Enthält die Quelle Veranstaltungen aus mehreren Städten (gemeinsame oder überregionale Quelle), werden **ausschließlich** Veranstaltungen übernommen, deren Veranstaltungsort tatsächlich **Nürnberg oder Fürth** ist. Andere Orte wie Erlangen oder Schwabach werden verworfen. Adapter-Einstellung `get_allowed_cities() = ['Nürnberg', 'Fürth']`. Details in [05-filter.md](05-filter.md) |
+| Name | Concertbüro Franken (Konzertveranstalter; Anzeige im Admin: „Concertbüro Franken“) – die vom Auftraggeber benannte Quelle für **Nürnberg/Fürth** |
+| Slug (`source`) | **`concertbuero-franken`** (ersetzt den Platzhalter `nuernberg-fuerth`; mit diesem wurden nie Daten gespeichert) |
+| Ausgangs-URL | https://www.concertbuero-franken.de/ |
+| **Crawl-URL** | Monatsansichten `https://www.concertbuero-franken.de/konzerte-nach-monat.html?month={JJJJMM}` (aktueller Monat + alle Monate der Monatsnavigation, höchstens 24) |
+| Status | **funktioniert** (live getestet am 2026-10-15) |
+| Parser vorhanden | **ja**: `Eventcrawler_Source_Concertbuero_Franken` |
+| Abrufmethode | **19 Requests** (Monatsseiten, 1 s Pause), live **32–33 s**; keine Detailseiten |
+| Matching-Methode | **`external_id` = Alias der Detailseite** (`/konzert-details/{alias}.html`, je Termin eindeutig) |
+| Letzter technischer Test | 2026-10-15: 404 Termine, 323 Nürnberg + 1 Fürth gespeichert, 80 andere Städte ausgeschlossen; zweiter Crawl 324 unverändert |
+| Plattform | **Contao** (Open Source CMS), Apache, UTF-8, serverseitiges HTML; Detailseiten mit JSON-LD `Event` |
+| Kundenvorgabe | **nur Termine mit Veranstaltungsort in Nürnberg oder Fürth** (A93) |
+
+### Zugriff (geprüft 2026-10-15 über `wp_remote_get()`, `sslverify=true`, Plugin-User-Agent)
+
+| Abruf | Ergebnis |
+|---|---|
+| Startseite / Monatsseite / Detailseite | **200**, keine Weiterleitung, `Server: Apache`, 0,6–1,2 s, TLS mit dem CA-Bundle von WordPress verifiziert |
+| robots.txt | 200; sperrt nur `/contao/` und `/_contao/`, verweist auf sitemap.xml |
+| Bot-Schutz / Rate Limit / Captcha / JS-Pflicht | keine Anzeichen (ca. 60 Abrufe in Analyse und Tests, alle 200; Liste serverseitig) |
+
+### Technische Analyse (2026-10-15)
+
+| Punkt | Ergebnis |
+|---|---|
+| Startseite | Auswahl kommender Konzerte + Monatsnavigation (19 Monate von 10/2026 bis 09/2028, mit Lücken) |
+| Monatsansicht | je Termin `div.event`: `time[datetime]` (ISO mit Offset, z. B. `2026-10-19T20:00:00+02:00`), Zeitspanne „20:00–23:59“, Titel und Link `h3.vee-listing-headline a`, zweites `p.info` „**Stadt • Ort**“ („Nürnberg • Hirsch“), Badges `div.eventListProperties`. Der aktuelle Monat beginnt mit dem heutigen Tag. Keine Seitenblätterung innerhalb eines Monats |
+| Mengen | **404 Termine** über 19 Monate (ca. 50 je Monat in den ersten Monaten) |
+| IDs | **404 Termine = 404 verschiedene Detail-URLs**; Alias meist mit Datum (`xandria-2026-10-19`), teils ohne (`nena-2`, `the-tonic-sisters`). Ein Datum im Alias stimmt immer mit dem Termin überein (385/385) |
+| Detailseite (Stichprobe 9) | `p.stadtvenue` „Nürnberg • Hirsch“, `p.einlass` / `p.beginn`, JSON-LD `Event` mit `location.name` und `location.address.addressLocality` (**Stadt strukturiert**), langer Text, Ticketlink (Eventim). **Keine Straße.** Ergebnis: Uhrzeit der Liste = „Beginn“ (nie Einlass), „Stadt • Ort“ der Liste = JSON-LD-Ort/-Stadt in **9 von 9** Fällen → Detailseiten nicht nötig |
+| Ende | „–23:59“ bei **403 von 403** Terminen mit Zeitspanne = Vorgabewert der Vorlage, **kein echtes Ende** |
+| Status | Badges: AUSVERKAUFT (23), ABGESAGT (11), LOCATION VERLEGT (7 + 1 kombiniert), TERMIN WIRD VERSCHOBEN (2), NEUER TERMIN (2) |
+| Verschiebung | Die Quelle legt einen **neuen Termin mit neuem Alias** an und lässt den alten mit Badge stehen (DREIVIERTELBLUT: 24.02.2027 „TERMIN WIRD VERSCHOBEN“, 03.02.2027 „NEUER TERMIN“) |
+| Dubletten der Quelle | 2 Paare mit zwei Aliassen für denselben Abend: CLAWFINGER 02.11.2026 Löwensaal, NAPALM DEATH 06.11.2026 Hirsch (beide „LOCATION VERLEGT“) |
+| API / iCal / RSS | nicht gefunden; JSON-LD nur auf Detailseiten |
+
+### Städte (alle 404 Termine, Schreibweise wie in der Quelle)
+
+Nürnberg 323, Schwabach 17, Höchstadt 12, Schweinfurt 10, Frankfurt 9, Zirndorf 8, Regensburg 5, Erlangen 5, Bamberg 4,
+Würzburg 2, Hersbruck 2, Abenberg 2, **Fürth 1**, Hallstadt 1, Feucht 1, Burgheim 1, „Spalt - Enderndorf“ 1.
+Beobachtete Schreibweisen von Nürnberg/Fürth: nur „Nürnberg“ und „Fürth“ (keine „Nuernberg“, Großschreibung oder
+Ortsteilzusätze). 22 Orte in Nürnberg (Hirsch, Löwensaal, Gutmann, Gutmann am Dutzendteich, Meistersingerhalle,
+Serenadenhof, Club Stereo, Kia Metropol Arena, Z-Bau …), in Fürth „Grüner Baum“.
+
+### Entscheidungen (A93)
+
+- **Geografische Auswahl im Adapter:** Stadt = Text vor „ • “ in der Zeile „Stadt • Ort“ (strukturierte Ausgabe des
+  Ortsfelds, deckungsgleich mit JSON-LD `addressLocality`). Übernommen nur bei exakt „Nürnberg“ oder „Fürth“ nach
+  technischer Normalisierung (Trim, Entities, Whitespace, Groß/Klein). Keine Umschrift, keine Ortsteil- oder
+  Präfixformen („Nürnberg-Langwasser“, „Fürth am Berg“ → ausgeschlossen), keine Region, keine Entfernung, keine PLZ.
+- Andere Städte werden **nicht an den Crawler geliefert** (keine eigene Ergebniskategorie, keine Core-Änderung; Zählung
+  über `get_geo_stats()`); fehlt „Stadt • Ort“, wird der Termin als fehlerhaft gezählt, nie als Nürnberg.
+- Zweite Sicherung: `get_allowed_cities() = ['Nürnberg', 'Fürth']` (zentrale Ortsregel, 05-filter.md Abschnitt 5).
+- Alle Monate der Navigation (Konzerte werden weit im Voraus angekündigt), höchstens 24.
+- `start_time` = Uhrzeit aus `datetime` (= Beginn); Ende nie (23:59 ist Vorlage); keine Beschreibung (nur Langtext auf der
+  Detailseite); keine Adresse (in der Quelle nicht vorhanden); Badges nicht gespeichert (wie Theater Selb, A79).
+
+### Felder (Stand 2026-10-15, 324 gespeichert)
+
+| Feld | Regel | Ergebnis |
+|---|---|---|
+| `title` | `h3` der Liste, unverändert | 324 |
+| `description` | nicht vorhanden → leer | 0 |
+| `start_date` / `start_time` | `time[datetime]`, Ortszeit | 324 / 324 (15.10.2026–07.04.2028) |
+| `end_date` / `end_time` | nie („23:59“ der Vorlage) | 0 |
+| `all_day` | 0 | 0 |
+| `venue_name` | Text nach „ • “ | 324 |
+| `venue_address` | nicht vorhanden | 0 (NULL) |
+| `city` | Text vor „ • “, nur Nürnberg/Fürth | 323 × Nürnberg, 1 × Fürth |
+| `event_url` = `source_url` | Detailseite `/konzert-details/{alias}.html` | 324 |
+
+### Identität, Filter, Überschneidungen
+
+- Getestet mit veränderter Kopie: Titel, Beginn (17:00 → 18:00), **Datum (18.10. → 20.10., Alias gleich)**, Ort, Stadt
+  Nürnberg → Fürth → **derselbe Datensatz**; Stadt Nürnberg → Erlangen → Termin wird nicht mehr geliefert, der
+  vorhandene Datensatz bleibt unverändert (es wird nichts gelöscht, 03-crawler.md); neuer Alias → neuer Datensatz;
+  Filterbegriff → gefiltert. Verschiebt die Quelle selbst, entsteht ein neuer Alias (siehe oben) → neuer Datensatz.
+- Zentraler Filter: 0 Treffer bei 324 Titeln.
+- Überschneidungen: keine andere Quelle hat Termine in Nürnberg oder Fürth → **0 Dubletten**. 17 gleiche Künstler bei
+  anderen Quellen sind Tourneetermine an anderen Orten und Tagen (z. B. Maxi Gstettenbauer: Coburg 13.11.2026, DAS
+  ZENTRUM 03.02.2027, Nürnberg 04.02.2027; Ines Procter: DAS ZENTRUM 27.11.2026, Münchberg 20.02.2027, Nürnberg
+  19.02.2027).
+
+### Bekannte Einschränkungen
+
+- 10 gespeicherte Termine tragen das Badge „ABGESAGT“ und erscheinen im XML wie normale Termine (offene Kundenfrage,
+  todo.md, wie bei Theater Selb).
+- Keine Beschreibung und keine Adresse in der Quelle.
+- Zwei Quelldubletten (zwei Aliasse, gleicher Abend) → zwei Datensätze, im XML je eine Zeile.
+- Weitere Fürther Orte ließen sich erst beurteilen, wenn die Quelle sie führt (2026-10-15: ein Termin).
 
 ---
 

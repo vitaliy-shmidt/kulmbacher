@@ -34,6 +34,7 @@ require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-sta
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-helmbrechts.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-kronach.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-bayreuth-tourismus.php';
+require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-concertbuero-franken.php';
 
 register_activation_hook( __FILE__, array( 'Eventcrawler_Installer', 'activate' ) );
 

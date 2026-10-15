@@ -104,7 +104,7 @@ $std    = hb_detail( '15.10.2026', 'Beginn: 19:30 Uhr', 'Bürgersaal Helmbrechts
 echo "Registrierung\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['helmbrechts'] ), true );
-ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
+ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus', 'concertbuero-franken' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'helmbrechts' ), 'Helmbrechts' );
 
 echo "Normaler Termin\n";

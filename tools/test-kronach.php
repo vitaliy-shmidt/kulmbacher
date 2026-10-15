@@ -110,7 +110,7 @@ $krk    = kr_detail( 'Kreiskulturraum', 'Siechenangerstraße 13', '96317 Kronach
 echo "Register\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['kronach'] ), true );
-ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
+ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus', 'concertbuero-franken' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'kronach' ), 'Kronach' );
 ec_check( 'Detail-URL je Termin eindeutig', $source->has_unique_detail_urls(), true );
 ec_check( 'Such-URL wie Formular', Eventcrawler_Source_Kronach::search_url( $from, $from->modify( '+27 days' ) ), 'https://www.kronach.de/tourismus-kultur/veranstaltungen/index.html?ev%5Bstart%5D=15.10.2026&ev%5Bend%5D=11.11.2026&ev%5Bsearch%5D=' );

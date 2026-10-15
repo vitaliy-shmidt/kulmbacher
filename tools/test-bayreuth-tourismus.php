@@ -113,7 +113,7 @@ $one     = function ( array $item ) use ( $source, $none ) {
 echo "Register\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['bayreuth-tourismus'] ), true );
-ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
+ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus', 'concertbuero-franken' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'bayreuth-tourismus' ), 'Bayreuth Tourismus' );
 ec_check( 'Detail-URL je Veranstaltung (nicht eindeutig je Termin)', $source->has_unique_detail_urls(), false );
 $url = Eventcrawler_Source_Bayreuth_Tourismus::search_url( new DateTimeImmutable( '2026-10-15' ), new DateTimeImmutable( '2026-11-11' ) );

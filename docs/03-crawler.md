@@ -45,6 +45,7 @@ Die Schritte 1–2 sind quellenspezifisch (Adapter), die Schritte 3–6 laufen z
 | `includes/sources/class-eventcrawler-source-bad-steben.php` | `Eventcrawler_Source_Bad_Steben` | Adapter Bad Steben über eT4/destination.one (Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-coburg.php` | `Eventcrawler_Source_Coburg` | Adapter Coburg (TYPO3/events2, verlinkte Tagesseiten; Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-theater-selb.php` | `Eventcrawler_Source_Theater_Selb` | Adapter Theater Selb (WordPress, Liste + Detailseite je Termin; Details in 04-quellen.md) |
+| `includes/sources/class-eventcrawler-source-concertbuero-franken.php` | `Eventcrawler_Source_Concertbuero_Franken` | Adapter Concertbüro Franken (Contao-Monatsseiten, 19 Abrufe; nur Nürnberg/Fürth, A93; Details in 04-quellen.md Abschnitt 15) |
 | `includes/sources/class-eventcrawler-source-bayreuth-tourismus.php` | `Eventcrawler_Source_Bayreuth_Tourismus` | Adapter Bayreuth Tourismus (Regional-API region-bayreuth.de, 2 Abrufe; Ort DAS ZENTRUM ausgeschlossen, A91; Details in 04-quellen.md Abschnitt 8) |
 | `includes/sources/class-eventcrawler-source-kronach.php` | `Eventcrawler_Source_Kronach` | Adapter Kronach (CMS recon; Datumssuche + Detailseiten je Veranstaltung über „Weitere Termine“; Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-helmbrechts.php` | `Eventcrawler_Source_Helmbrechts` | Adapter Helmbrechts (TYPO3 news + calendarize; Monatsansichten + Detailseite je Veranstaltung; Details in 04-quellen.md) |
@@ -98,9 +99,9 @@ Hilfsfunktionen der Basisklasse:
 Registrierung: `Eventcrawler_Crawler::get_sources()`, erweiterbar über den Filter-Hook `eventcrawler_sources`.
 Registriert sind in dieser Reihenfolge `Eventcrawler_Source_Burg_Rabenstein`, `Eventcrawler_Source_Bad_Steben`,
 `Eventcrawler_Source_Coburg`, `Eventcrawler_Source_Theater_Selb`, `Eventcrawler_Source_Das_Zentrum_Bayreuth` und
-`Eventcrawler_Source_Schuetzenhaus_Muenchberg`, `Eventcrawler_Source_Stadtsteinach`, `Eventcrawler_Source_Helmbrechts`, `Eventcrawler_Source_Kronach`, `Eventcrawler_Source_Bayreuth_Tourismus`. Eine neue Quelle braucht: Adapterdatei, `require_once` in
+`Eventcrawler_Source_Schuetzenhaus_Muenchberg`, `Eventcrawler_Source_Stadtsteinach`, `Eventcrawler_Source_Helmbrechts`, `Eventcrawler_Source_Kronach`, `Eventcrawler_Source_Bayreuth_Tourismus`, `Eventcrawler_Source_Concertbuero_Franken`. Eine neue Quelle braucht: Adapterdatei, `require_once` in
 `eventcrawler.php` und eine Zeile in `get_sources()`. Admin, Filter, Repository und Export ändern sich dafür nicht (bei
-Coburg, Theater Selb, DAS ZENTRUM, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach und Bayreuth Tourismus so umgesetzt).
+Coburg, Theater Selb, DAS ZENTRUM, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach, Bayreuth Tourismus und Concertbüro Franken so umgesetzt).
 Weitere Adapter werden dort ergänzt. Der Anzeigename im Admin kommt automatisch aus `get_name()`.
 
 ## 4. Internes Event-Format
@@ -698,3 +699,40 @@ Der Ausschluss des Orts DAS ZENTRUM (A91) liegt vollständig im Adapter.
 - **Hof:** über WordPress 2 × HTTP 503 (Veranstaltungsseite, robots.txt), neutraler curl-User-Agent für robots.txt: 200
   → Sperre der Kennung (A85), zurückgestellt.
 - Aktive Quellen unverändert 10; kein Live-Crawl, keine Änderung an Plugin oder Tests in dieser Phase.
+
+## 23. Elfte aktive Quelle Concertbüro Franken (2026-10-15)
+
+Zugriff über `wp_remote_get()` (sslverify, Plugin-User-Agent): 200. Integration **ohne Änderungen** an Core,
+Basisklasse, Admin, JavaScript, Repository, Filter, Export oder Datenbank: Adapter, `require_once`, eine Zeile in
+`get_sources()`, `tools/test-concertbuero-franken.php` (35 Tests); in den übrigen Tests nur die Reihenfolge ergänzt. Die
+Auswahl Nürnberg/Fürth (A93) liegt vollständig im Adapter; die zentrale Ortsregel ist nur zweite Sicherung.
+
+| Test | Ergebnis |
+|---|---|
+| Parser offline (19 Monatsseiten) | 404 Termine: 323 Nürnberg, 1 Fürth, 80 andere Städte ausgeschlossen, 0 ohne Stadt |
+| Live-Crawl 1 (Alle Quellen) / Live-Crawl 2 | 324 gefunden, 324 neu / 0 neu, 0 aktualisiert, 324 unverändert, Hashes gleich; **19 Abrufe**, 32–33 s |
+| `GROUP BY city` für `concertbuero-franken` | ausschließlich Nürnberg (323) und Fürth (1) |
+| Änderungen (veränderte Kopie) | Titel, Beginn, Datum (Alias gleich), Ort, Stadt Nürnberg → Fürth → 5 × UPDATE; Nürnberg → Erlangen → nicht geliefert, Datensatz unverändert; neuer Alias → neuer Datensatz; Filterbegriff → gefiltert |
+| HTTP 403/429/503/500, Netzwerkfehler, TLS-Fehler, leere Antwort, kaputte Struktur, **Abbruch nach dem ersten Monat** | Quellenfehler, Daten unverändert |
+| „Alle Quellen“, Quellen 1–10 als Fehler | „1 von 11 Quellen erfolgreich“, Concertbüro Franken normal |
+| Hash / doppelte `external_id` | 0 / 0 (2562 Events); keine PHP-Warnings, keine JS-Fehler |
+
+### Laufzeiten „Alle Quellen“ mit 11 aktiven Quellen (live, 2026-10-15, Edge headless)
+
+| Quelle | Abrufe | Request | Ergebnis |
+|---|---|---|---|
+| Burg Rabenstein | 1 | 1,5 s | 151 unverändert |
+| Bad Steben | 2 | 10,8 s | 460 unverändert |
+| Coburg | ca. 15 | 43,4 s | 353 unverändert, 1 fehlerhaft |
+| Theater Selb | 31 | 45,4 s | 29 unverändert, 1 gefiltert |
+| DAS ZENTRUM Bayreuth | 2 | 4,6 s | 73 unverändert |
+| Schützenhaus Münchberg | 1 | 7,3 s | 4 aktualisiert (Quelle), 42 unverändert, 1 fehlerhaft |
+| Stadtsteinach | 52 | 75,8 s | 41 unverändert, 6 fehlerhaft |
+| Helmbrechts | 44 | 76,4 s | 47 unverändert, 2 fehlerhaft |
+| Kronach | 45 | 70,1 s | 103 unverändert, 2 gefiltert, 1 fehlerhaft |
+| Bayreuth Tourismus | 2 | 3,7 s | 538 unverändert, 3 gefiltert, 7 fehlerhaft |
+| Concertbüro Franken | 19 | 33,3 s | 324 gefunden (80 andere Städte vorher ausgeschlossen), 324 neu |
+| **Summe** | ca. 214 | **ca. 372 s** (Browser-Lauf ca. 6,5 min inkl. Anmeldung/Reload) | 2189 gefunden, 324 neu, 4 aktualisiert, 1837 unverändert, 6 gefiltert, 18 fehlerhaft |
+
+- Strikt nacheinander, „Quelle 1 von 11“ bis „Quelle 11 von 11“; Browser-AJAX stabil. Längster Einzelrequest
+  Helmbrechts (76,4 s, 64 % von 120 s).

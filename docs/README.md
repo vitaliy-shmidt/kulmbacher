@@ -161,18 +161,24 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   - Matching über eventId + Datum; 538 Termine gespeichert (28 Tage), 3 gefiltert, 7 ohne Ort
   - Integration ohne Änderung an Core, Admin, JS, Filter, Export und DB; „Alle Quellen“ mit 10 Quellen ~342 s
   - Tests: `tools/test-bayreuth-tourismus.php` (45 Tests)
+- **Elfte aktive Quelle Concertbüro Franken (2026-10-15)** – die Quelle für Nürnberg/Fürth (siehe [04-quellen.md](04-quellen.md) Abschnitt 15):
+  - Contao-Monatsseiten (19 Abrufe, ~33 s), keine Detailseiten nötig
+  - **nur Termine mit Stadt Nürnberg oder Fürth** (exakt, A93): 324 von 404 gespeichert, 80 aus 15 anderen Städten ausgeschlossen
+  - Matching über den Alias der Detailseite; „Alle Quellen“ mit 11 Quellen ~372 s
+  - Tests: `tools/test-concertbuero-franken.php` (35 Tests)
+- **Ursprüngliche Quellenliste vollständig technisch geprüft:** 15 Quellen – 11 aktiv, 4 zurückgestellt, 0 ungeprüft.
 - **Noch nicht implementiert:**
   - Export nach frei wählbarem Datumsbereich, Stadt oder Checkbox-Auswahl
   - Listenfilter nach Stadt (derzeit über die Suche)
-  - weitere Quellen ab der elften
+  - weitere Quellen (die ursprüngliche Liste ist abgearbeitet)
   - automatischer Crawl (Cron), bewusst nicht im MVP
 - **Quellen:** Burg Rabenstein, Bad Steben, Coburg, Theater Selb, DAS ZENTRUM Bayreuth, Schützenhaus Münchberg und
-  Stadtsteinach, Helmbrechts, Kronach und Bayreuth Tourismus sind analysiert und angebunden (10 aktive Quellen).
+  Stadtsteinach, Helmbrechts, Kronach, Bayreuth Tourismus und Concertbüro Franken (Nürnberg/Fürth) sind analysiert und
+  angebunden (11 aktive Quellen).
   **Zurückgestellt** (Server sperren den User-Agent „Eventcrawler“, keine Umgehung,
   A85): Neustadt bei Coburg (HTTP 503), Kulmbach (HTTP 403) und Hof (HTTP 503); Thurnau zurückgestellt, weil
   WordPress die TLS-Kette nicht verifiziert (A92) – siehe [04-quellen.md](04-quellen.md) „Zurückgestellte /
-  schwer erreichbare Quellen“. Die übrigen Quellen und die geplante Nürnberg/Fürth-Quelle sind dokumentiert, aber
-  **nicht technisch analysiert**.
+  schwer erreichbare Quellen“. Keine Quelle der ursprünglichen Liste ist mehr ungeprüft.
 - **XML-Referenzdatei:** fehlt weiterhin. Der Export ist nach dem dokumentierten Minimalstandard implementiert; ein
   Abgleich mit der Referenz steht aus (offene Punkte in [07-export.md](07-export.md) Abschnitt 9).
 
@@ -189,7 +195,7 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | Admin-Menü / Seitentitel | „Eventcrawler“ / „Importierte Veranstaltungen“ |
 | Admin-Seiten | `wp-admin/admin.php?page=eventcrawler` (Importierte Veranstaltungen, mit Detail-Modal), `wp-admin/admin.php?page=eventcrawler-filter` (Filterregeln), `wp-admin/admin.php?page=eventcrawler-domains` (Link-Bezeichnungen) |
 | AJAX-Aktionen | `eventcrawler_crawl_source` (eine Quelle crawlen), `eventcrawler_get_event_details` (gespeicherte Werte eines Events, nur lesend) |
-| Quellen (Slug) | `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach`, `bayreuth-tourismus` |
+| Quellen (Slug) | `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach`, `bayreuth-tourismus`, `concertbuero-franken` |
 | Hooks | `eventcrawler_sources` (Adapter registrieren), `eventcrawler_filter_rules` (aktive Filterregeln zur Laufzeit; ersetzt `eventcrawler_exclude_terms`), `eventcrawler_export_display_url` (sichtbare URL im XML nach Link-Bezeichnung, 07-export.md 10.2/13) |
 | Anforderungen | WordPress ≥ 6.0, PHP ≥ 7.4 (getestet mit WordPress 7.1.2, PHP 8.3.12, MariaDB 10.4.32) |
 
@@ -250,6 +256,10 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 - Parsertests Bayreuth Tourismus (eingebettete JSON-Antworten, keine HTTP-Abrufe, keine DB-Änderung):
   ```
   C:\xampp\php\php.exe tools\test-bayreuth-tourismus.php <pfad\zu\wp-load.php>
+  ```
+- Parsertests Concertbüro Franken (eingebettete HTML-Ausschnitte, keine HTTP-Abrufe, keine DB-Änderung):
+  ```
+  C:\xampp\php\php.exe tools\test-concertbuero-franken.php <pfad\zu\wp-load.php>
   ```
 
 ## Dokumente

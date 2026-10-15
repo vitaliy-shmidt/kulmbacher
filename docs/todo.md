@@ -224,7 +224,8 @@ Stand: 2026-10-15 (zehnte aktive Quelle Bayreuth Tourismus). Erledigte Punkte ab
 - [x] `tools/test-theater-selb.php` (38 Tests); Regression `test-export-rules.php` (97), `test-domain-mappings.php` (90)
 - [ ] **Kunde:** Abgesagte Termine (Badge „ABGESAGT“, z. B. „Plan B!: Capones Vermächtnis“ am 28.11.2026) erscheinen
       im XML wie normale Termine. Soll das Badge ausgewertet werden (z. B. Termin überspringen oder Zusatz im Titel)?
-      Bräuchte eine bewusste Regel; derzeit nicht umgesetzt
+      Bräuchte eine bewusste Regel; derzeit nicht umgesetzt. **Betrifft seit 2026-10-15 auch Concertbüro Franken:
+      10 gespeicherte Termine mit Badge „ABGESAGT“** (dazu AUSVERKAUFT, LOCATION VERLEGT, TERMIN WIRD VERSCHOBEN)
 - [ ] **Kunde:** Filterregel `bezirkstag` filtert das Jugendkonzert „Stars von Morgen“ (Schirmherr „Bezirkstagspräsident“).
       Regel auf „ganzes Wort“ umstellen oder belassen? (05-filter.md Abschnitt 9)
 - [ ] **Redaktion:** Link-Bezeichnung `www.theater-selb.de` → z. B. „Theater Selb“ anlegen?
@@ -258,6 +259,16 @@ Stand: 2026-10-15 (zehnte aktive Quelle Bayreuth Tourismus). Erledigte Punkte ab
 - [x] `tools/test-schuetzenhaus-muenchberg.php` (35 Tests); Regression 97 / 90 / 38 / 45
 - [ ] **Redaktion:** Link-Bezeichnung `schuetzenhaus-muenchberg.de` → z. B. „Schützenhaus Münchberg“ anlegen?
 - [ ] Quelle: Huebnotix mit Datum „Sa, 27.02.07“ wird übersprungen, bis das Schützenhaus das Jahr korrigiert
+
+## Elfte aktive Quelle: Concertbüro Franken (2026-10-15)
+
+- [x] Zugriff über `wp_remote_get()` 200; Contao-Monatsseiten (19 Abrufe), Liste reicht (Stichprobe 9 Detailseiten) → 04-quellen.md Abschnitt 15
+- [x] Adapter (A93): nur exakt Nürnberg/Fürth, 80 andere Städte ausgeschlossen; external_id = Alias; keine Core-Änderung
+- [x] Live: 324 neu, zweiter Crawl 324 unverändert; nur Nürnberg/Fürth in der DB und im XML; Updates, Fehlerfälle, Modal, Suche, Link-Bezeichnung
+- [x] `tools/test-concertbuero-franken.php` (35 Tests); Regression aller Suites grün; 0 Dubletten mit anderen Quellen
+- [ ] **Kunde:** abgesagte Termine (10) – siehe Frage zu Badges bei Theater Selb
+- [ ] **Redaktion:** Link-Bezeichnung `www.concertbuero-franken.de` → „Concertbüro Franken“ anlegen?
+- [ ] Beobachten: Verschiebungen legt die Quelle als neuen Termin an (neuer Alias) – alter Datensatz bleibt mit Badge
 
 ## Zehnte aktive Quelle: Bayreuth Tourismus (2026-10-15)
 
@@ -347,13 +358,16 @@ Quellen danach schrittweise integrieren: jeweils analysieren → Adapter → tes
 - [ ] Thurnau – zurückgestellt (2026-10-15: TLS, Root „ISRG Root YR“ fehlt im CA-Bundle von WordPress; nach
       WordPress-Update erneut prüfen oder Markt Thurnau ansprechen)
 - [x] Kronach (2026-10-15, siehe Abschnitt „Neunte aktive Quelle: Kronach“)
-- [ ] Nürnberg/Fürth (URL vom Auftraggeber nötig; Ortsregel Nürnberg/Fürth)
+- [x] Nürnberg/Fürth = Concertbüro Franken (2026-10-15, siehe Abschnitt „Elfte aktive Quelle: Concertbüro Franken“)
+
+**Ursprüngliche Quellenliste vollständig technisch geprüft (2026-10-15): 15 Quellen – 11 aktiv, 4 zurückgestellt
+(Neustadt bei Coburg, Kulmbach, Hof, Thurnau), 0 ungeprüft.**
 
 ## Offene Fragen an den Auftraggeber
 
 - [ ] XML-Referenzdatei bereitstellen
 - [ ] Bad Steben: auch Nachbarorte übernehmen? Veranstalter als „Ort“ akzeptabel (z. B. „Bayerisches Staatsbad Bad Steben GmbH“)?
-- [ ] URL der Nürnberg/Fürth-Quelle
+- [x] URL der Nürnberg/Fürth-Quelle: Concertbüro Franken (2026-10-15)
 - [x] Zählen Bürgerversammlungen als „politisch“? Ja (2026-10-02), Regel `bürgerversammlung`
 - [ ] Zählen sonstige Informationsveranstaltungen der Verwaltung als „politisch“?
 - [ ] Mehrtägige Veranstaltungen und Ausstellungen: an jedem Tag, nur am ersten Tag oder gar nicht exportieren?

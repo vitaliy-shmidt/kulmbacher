@@ -837,3 +837,11 @@ Statusangaben stehen wie in der Quelle im Titel („ENTFÄLLT: …“, „AUSVER
 steht im Gesamtexport genau **einmal**; die bei Bayreuth Tourismus gelisteten Termine dieses Orts fehlen (A91).
 Gesamtexport 10 Quellen: 2091 `<p>`, wohlgeformt, Format unverändert. Link-Bezeichnung getestet (`region-bayreuth.de` →
 „Bayreuth Tourismus“, 529 ×), danach gelöscht, Export wieder bytegleich.
+
+## 21. Elfte Quelle Concertbüro Franken im Export (2026-10-15)
+
+Keine Änderung am Exporter. Export nur Concertbüro Franken: 322 `<p>` aus 324 Datensätzen (die zwei Quelldubletten
+CLAWFINGER und NAPALM DEATH werden als identische Zeilen zusammengefasst), 210 `<h1>`, **ausschließlich**
+`<h2>Nürnberg</h2>` (210) und `<h2>Fürth</h2>` (1). Ohne Beschreibung und Adresse, z. B. „20:00 Uhr THE KILKENNYS,
+Hirsch. Info: www.concertbuero-franken.de“. Link-Bezeichnung getestet (`www.concertbuero-franken.de` → „Concertbüro
+Franken“, 322 ×), danach gelöscht, Export wieder bytegleich.

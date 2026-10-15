@@ -72,6 +72,9 @@ echten Terminen geprüft (04-quellen.md Abschnitt 5).
 **Ebenso Schützenhaus Münchberg (2026-10-15):** automatisch in allen Auswahlfeldern, „Quelle 1 von 6“ bis „Quelle 6 von
 6“. Suche: Titel („Bausch“ 1), Beschreibung („Stadtrundgang“ 2, „Grüne“ 1), Ort („Schützenhaus Münchberg“ 46), Adresse
 („Hofer Straße“ 46), Stadt („Münchberg“ 46). Detail-Modal mit 6 echten Terminen geprüft.
+**Ebenso Concertbüro Franken (2026-10-15):** „Quelle 1 von 11“ bis „Quelle 11 von 11“; Suche: Titel („KILKENNYS“ 1),
+Ort („Löwensaal“ 55, „Grüner Baum“ 1), Stadt („Fürth“ 1, „Nürnberg“ 323 der Quelle); Beschreibung und Adresse liefert die
+Quelle nicht. „gefunden“ zählt nur Termine in Nürnberg/Fürth (A93). Modal mit 5 Terminen geprüft (4 Nürnberg, 1 Fürth).
 **Ebenso Bayreuth Tourismus (2026-10-15):** „Quelle 1 von 10“ bis „Quelle 10 von 10“; Suche: Titel („Stuttgarter“ 1),
 Beschreibung („Saint-Saëns“ 1), Ort („Friedrichsforum“ 13), Adresse („Hugenottenstra“ 1), Stadt („Bayreuth“ 538 der
 Quelle, 612 gesamt mit DAS ZENTRUM). „gefunden“ zählt die Termine nach dem Ausschluss des Orts DAS ZENTRUM (A91).
