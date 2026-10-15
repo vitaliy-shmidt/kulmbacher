@@ -20,10 +20,9 @@
 
 ## Übersicht
 
-Stand 2026-10-15: **9 Quellen sind analysiert und angebunden** (Burg Rabenstein, Bad Steben, Coburg, Theater Selb,
-DAS ZENTRUM Bayreuth, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach). Neustadt bei Coburg und Kulmbach
-sind zurückgestellt, Bayreuth Tourismus ist vorgeprüft (Überschneidung), Hof, Thurnau und Nürnberg/Fürth sind nicht
-analysiert.
+Stand 2026-10-15: **10 Quellen sind analysiert und angebunden** (Burg Rabenstein, Bad Steben, Coburg, Theater Selb,
+DAS ZENTRUM Bayreuth, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach, Bayreuth Tourismus). Neustadt bei
+Coburg und Kulmbach sind zurückgestellt, Hof, Thurnau und Nürnberg/Fürth sind nicht analysiert.
 
 | # | Slug (`source`) | Name | Status |
 |---|---|---|---|
@@ -34,7 +33,7 @@ analysiert.
 | 5 | `das-zentrum-bayreuth` | DAS ZENTRUM Bayreuth | **funktioniert** (2026-10-15) |
 | 6 | `neustadt-bei-coburg` | Neustadt bei Coburg | **zurückgestellt** (2026-10-15: Server blockiert den Crawler, Abschnitt 6) |
 | 7 | `kulmbach` | Kulmbach | **zurückgestellt** (2026-10-15: Server sperrt den Crawler mit HTTP 403, siehe „Zurückgestellte Quellen“) |
-| 8 | `bayreuth-tourismus` | Bayreuth Tourismus | nicht analysiert (Vorprüfung 2026-10-15, siehe Abschnitt 8) |
+| 8 | `bayreuth-tourismus` | Bayreuth Tourismus | **funktioniert** (2026-10-15; Termine am Ort DAS ZENTRUM ausgeschlossen, A91) |
 | 9 | `schuetzenhaus-muenchberg` | Schützenhaus Münchberg | **funktioniert** (2026-10-15) |
 | 10 | `hof` | Hof | nicht analysiert |
 | 11 | `stadtsteinach` | Stadtsteinach | **funktioniert** (2026-10-15; 6 von 47 Terminen ohne Ort übersprungen) |
@@ -43,7 +42,7 @@ analysiert.
 | 14 | `kronach` | Kronach | **funktioniert** (2026-10-15) |
 | 15 | `nuernberg-fuerth` | Nürnberg/Fürth | URL noch nicht bekannt |
 
-Die Slugs sind ein Vorschlag. Final festgelegt sind bisher `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts` und `kronach`. Sobald Daten mit
+Die Slugs sind ein Vorschlag. Final festgelegt sind bisher `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach` und `bayreuth-tourismus`. Sobald Daten mit
 einem Slug gespeichert sind, darf er nicht mehr geändert werden.
 
 ## Zurückgestellte / schwer erreichbare Quellen
@@ -813,13 +812,105 @@ Mögliche Wege (Entscheidung beim Auftraggeber, todo.md):
 
 | Eigenschaft | Wert |
 |---|---|
-| Name | Bayreuth Tourismus |
-| URL | https://www.bayreuth-tourismus.de/veranstaltungen-bayreuth/ |
-| Status | nicht analysiert (nur Vorprüfung im Rahmen von DAS ZENTRUM, 2026-10-15) |
-| Parser vorhanden | nein |
-| Detailseite vorhanden | ja, auf `region-bayreuth.de/veranstaltung/{slug}` (`detailLink`) |
-| externe ID bekannt | ja: `eventId` (UUID) in der Regional-API |
-| Bemerkungen | Vorprüfung: Die URL ist eine Themenseite (Feste); der Kalender ist `/eventkalender/`, ein Vue-Widget (`rbi-events`), das per JavaScript die API **`https://api.region-bayreuth.de/event-management/events/search`** abfragt (Parameter `page`, `size`, `sort=eventDateTimes.date:asc`, `districts` (4 UUIDs aus der Widget-Konfiguration), `venueIds`, `from`/`to`, `search`). JSON mit Titel, Kurzbeschreibung, Datum, Beginn **und Ende**, Ort + Raum + Adresse, Preis/Ticketlink. **TLS-Hinweis:** Die Zertifikatskette (Sectigo R46) wurde von Git-curl/OpenSSL nicht verifiziert, von Windows-curl schon – vor einem Adapter prüfen, ob `wp_remote_get()` mit dem WordPress-CA-Bundle verbindet. Überschneidung mit DAS ZENTRUM siehe „DAS ZENTRUM vs. Bayreuth Tourismus“ |
+| Name | Bayreuth Tourismus (Eventkalender von bayreuth-tourismus.de; Anzeige im Admin: „Bayreuth Tourismus“) |
+| Slug (`source`) | **`bayreuth-tourismus`** |
+| Ausgangs-URL | https://www.bayreuth-tourismus.de/veranstaltungen-bayreuth/ (Themenseite), Kalender https://www.bayreuth-tourismus.de/eventkalender/ |
+| **Crawl-URL** | **Regional-API** `https://api.region-bayreuth.de/event-management/events/search?page=0&size=1000&sort=eventDateTimes.date:asc&districts=…(4)&from={heute}&to={heute+27}` + derselbe Abruf mit `&venueIds=e7cac5bf-eefe-4b23-af39-d06aba69e0bd` (DAS ZENTRUM) |
+| Status | **funktioniert** (live getestet am 2026-10-15) |
+| Parser vorhanden | **ja**: `Eventcrawler_Source_Bayreuth_Tourismus` |
+| Abrufmethode | **2 Requests** (Suche + Ortsfilter DAS ZENTRUM, 1 s Pause), live **3–4 s**; keine Detailseiten |
+| Matching-Methode | **`external_id` = `{eventId}_{JJJJ-MM-TT}_{n}`** (eventId gilt je Veranstaltung) |
+| Letzter technischer Test | 2026-10-15: 563 Termine in der API, 15 DAS ZENTRUM ausgeschlossen, 548 an den Crawler, 538 gespeichert, 3 gefiltert, 7 ohne Ort; zweiter Crawl 538 unverändert |
+| Plattform | WordPress-Seite (nginx) mit Vue-Widget `rbi-events`; Daten aus der **Regionaldatenbank Region Bayreuth** (JSON-API) |
+| Detailseite | `https://region-bayreuth.de/veranstaltung/{slug}` (`detailLink`), **je Veranstaltung** |
+
+### Zugriff und TLS (geprüft 2026-10-15, Plugin-User-Agent)
+
+| Abruf | Ergebnis |
+|---|---|
+| `/veranstaltungen-bayreuth/`, `/eventkalender/` | **200**, keine Weiterleitung, `Server: nginx`, 0,3 s |
+| robots.txt bayreuth-tourismus.de | 200; sperrt nur `/wp-admin/` und eine Rückmeldeseite |
+| `api.region-bayreuth.de` (Suche) | **200**, JSON, 0,1–0,7 s; robots.txt der API: 404 (nicht vorhanden) |
+| Detailseite region-bayreuth.de | 200, 0,3 s |
+| Bot-Schutz / Rate Limit / Captcha | keine Anzeichen (ca. 40 API-Abrufe in Analyse und Tests, alle 200, keine Rate-Limit-Header) |
+| **TLS** | Kette: `*.region-bayreuth.de` → Sectigo Public Server Authentication CA DV R36 → **Root R46**. Git-curl/OpenSSL (ältere CA-Liste): Fehler 20 „unable to get local issuer certificate“. **Mit dem CA-Bundle von WordPress** (`wp-includes/certificates/ca-bundle.crt`) verifiziert: curl `ssl_verify_result=0`; **`wp_remote_get()` mit Standard `sslverify=true`: HTTP 200** (PHP-cURL 8.7, OpenSSL 3.0.15). Keine Zertifikatsprüfung abgeschaltet |
+
+### Technische Analyse (2026-10-15)
+
+| Punkt | Ergebnis |
+|---|---|
+| Widget-Konfiguration (`/eventkalender/`) | `filterBy.districts` = 4 Stadtteil-UUIDs (Bayreuth 95444/95445/95447/95448), `itemsPerPage: 10`, Benutzerfilter Datum/Kategorie/Ort |
+| API `events/search` | GET, Parameter `page` (ab 0), `size`, `sort=eventDateTimes.date:asc`, `districts` (mehrfach), `from`/`to` (`JJJJ-MM-TT`), `venueIds`. Antwort `{values, totalItems, totalPages, currentPage}`. **`size=1000` wird angenommen** → 28 Tage in einer Seite |
+| Mengen | 28 Tage: **563 Termine** (298 Veranstaltungen); 2 Monate: 1122; ohne Ende: 1922 |
+| Eintrag | `eventId` (UUID **je Veranstaltung**), `detailLink`, `title`, `description` (Kurztext, 18–120 Zeichen), `dateInfo` (`date.start/end`, `start`, `end`, `type` UNIQUE/MULTIPLE/INDIVIDUAL, `interval`), `venue` (`name`, `room`, `address.street/houseNumber/postalCode/city`, **keine Venue-ID**) oder `null`, `districtCity`, `price` |
+| Termine | jeder Termin ein eigener Eintrag; **eventId + Datum eindeutig** (563/563), auch eventId + Datum + Beginn |
+| Zeiten | Beginn bei allen; **Ende bei allen** (Häufung 17:00, 22:00, 18:00 …; Herkunft nicht belegbar, wird wie geliefert übernommen); 3 × Beginn 00:00 = echte Fortsetzung nach Mitternacht (Ende 05:00 bzw. 23:45/04:00, „Tag 2“, „42-Stunden-Spielemarathon“) |
+| Orte | 79 Orte, alle in der Stadt Bayreuth; **7 Termine ohne Ort** (`venue: null`, z. B. Tageswanderungen, „34. Bayreuther Kneipenfestival“) |
+| Status | nur im Titel/Kurztext: „AUSVERKAUFT:“ (2), „ENTFÄLLT:“ (1), „AUSGEBUCHTT:“ (1, Tippfehler der Quelle), „(Termin vorverlegt, statt 22.10.)“ (1). Kein Statusfeld |
+| Venue-Liste | `/venue-management/venues/status/approved`: 633 Orte mit `id`, `title`, `rooms`. DAS ZENTRUM = genau **ein** Ort: `e7cac5bf-eefe-4b23-af39-d06aba69e0bd` „DAS ZENTRUM - Internationales Jugendkulturzentrum Bayreuth e.V.“ (Räume Europasaal, Kleinkunstbühne, Seminarraum 6 / 2. Stock) |
+
+### Entscheidungen (A91)
+
+- **Quelle mit Vorrang je Ort:** Termine am Ort DAS ZENTRUM werden **nicht** übernommen; dafür ist die Quelle
+  `das-zentrum-bayreuth` zuständig. Grundlage ist die **stabile Venue-ID** der Regionaldatenbank: Der Adapter ruft
+  dieselbe Suche zusätzlich mit `venueIds=e7cac5bf-…` ab und übernimmt keine `eventId` aus dieser Menge (Venue-ID
+  steht nicht im Eintrag, nur als Filter der API). Sicherung: Trägt ein Eintrag exakt den Namen von DAS ZENTRUM, ist aber
+  nicht in der Menge, wird er als fehlerhaft übersprungen. Kein `contains` auf „Zentrum“ (andere Orte wie „Schoko e.V. -
+  Jugendkultur- und Sportzentrum“ bleiben), kein Titelabgleich, keine Ähnlichkeit, keine Datenübernahme zwischen
+  Quellen, keine gemeinsame ID.
+- Fällt der Ortsfilter-Abruf aus, bricht die Quelle ab (sonst würden DAS-ZENTRUM-Termine doppelt gespeichert).
+- Zeitraum **heute + 27 Tage**, Stadtteile wie im Widget; Seitengröße 1000, höchstens 5 Seiten.
+- `external_id` = `{eventId}_{Datum}_{n}`: Titel, Beginn, Ende, Ort, Adresse, Stadt, URL, Kurztext ändern sich →
+  UPDATE; **Datumsverschiebung → neuer Datensatz** (die Quelle hat keine Termin-ID; wie Coburg/Helmbrechts).
+- Kurztext `description` als Beschreibung (die Quelle hat nur diesen); Raum wird nicht gespeichert.
+- Ende wie geliefert; Ende nicht nach Beginn verwirft der Crawler. Beginn 00:00 bleibt (belegt echte Uhrzeit).
+- Ohne Ort → übersprungen; keine Stadt aus `districtCity` (Stadtteil des Eintrags, kein Veranstaltungsort).
+- „gefunden“ im Admin zählt die Termine **nach** dem DAS-ZENTRUM-Ausschluss (eigene Kategorie gibt es im Ergebnis nicht;
+  keine Core-Erweiterung); die Zahl der Ausschlüsse liefert `get_excluded_count()` und steht in den Tests.
+
+### Felder (Stand 2026-10-15, 538 gespeichert)
+
+| Feld | Regel | Ergebnis |
+|---|---|---|
+| `title` | `title`, unverändert (auch „AUSVERKAUFT:“, „ENTFÄLLT:“) | 538 |
+| `description` | `description` (Kurztext, Zeilenumbrüche bereinigt) | 538 |
+| `start_date` | `dateInfo.date.start` | 538 (15.10.–11.11.2026) |
+| `start_time` | `dateInfo.start` | 538 (3 × 00:00 echt) |
+| `end_date` / `end_time` | `dateInfo.date.end` + `dateInfo.end`, nur mit Beginn | 538 |
+| `all_day` | nicht vorhanden → 0 | 0 |
+| `venue_name` | `venue.name` | 538 |
+| `venue_address` | `venue.address.street` + `houseNumber` | 538 |
+| `city` | `venue.address.city` | 538 × Bayreuth |
+| `event_url` = `source_url` | `detailLink` (region-bayreuth.de) | 538, 276 verschiedene |
+
+Nicht gespeichert: Raum, Preis, Ticketlink, Bild, Koordinaten, Kategorie.
+
+### Überschneidung mit DAS ZENTRUM nach der Anbindung (28 Tage, 2026-10-15)
+
+| | Anzahl |
+|---|---|
+| Bayreuth-Tourismus-Termine am Ort DAS ZENTRUM (Ortsfilter = exakter Name, beide 15) | **15**, alle ausgeschlossen |
+| davon mit Gegenstück in der Quelle DAS ZENTRUM | 11 (Bosetti, Simon & Garfunkel, Rolf Miller, Claus von Wagner, Robert Alan, Mina Richman, Techno Classics 19:15/19:19, Matthias Walz, To Athena, Herbstnebel, Bochum) |
+| nur bei Bayreuth Tourismus | 3 × „Tanzhaus im ZENTRUM“ (Seminarraum); 1 × „Die kleine Eule feiert Weihnachten“ mit Datum 23.10. (DAS ZENTRUM: 23.11.) |
+| nur bei DAS ZENTRUM im Zeitraum | 5 (Mamaladnamala, Fest für die Sinne, Rudelsingen, Kneipenfestival-Abend, Stadt.Land.Mord.) |
+| verbleibende Dubletten im XML | **0**: jeder DAS-ZENTRUM-Titel steht genau einmal im Gesamtexport. „Kneipenfestival“ erscheint bei Bayreuth Tourismus nur mit anderen Bands an anderen Orten |
+| andere aktive Quellen | keine Termine in Bayreuth außer DAS ZENTRUM; keine gleichen Titel |
+
+### Filter / Status
+
+- Echte Treffer im Zeitraum: „Bürgerinnen- und Bürgerversammlung“ (`bürgerversammlung`), 2 × „Kreativstammtisch
+  „Gemeinsam statt einsam““ (`stammtisch`, regelkonform: Treffen unter dem Namen Stammtisch). Kein Treffer allein über
+  den Kurztext, keine Fehlalarme.
+- Status nur als Text (siehe oben), wird nicht ausgewertet; Titel bleibt unverändert.
+
+### Bekannte Einschränkungen
+
+- Datumsverschiebung → neuer Datensatz, der alte bleibt (keine Termin-ID).
+- Endzeiten: bei allen Terminen vorhanden, teils auffällig rund; nicht prüfbar, ob schematisch.
+- Ausschluss nur für DAS ZENTRUM; Termine dieses Hauses, die die Quelle einem anderen Ort zuordnet, würden übernommen
+  (2026-10-15: keiner gefunden).
+- Die 4 Stadtteil-IDs stammen aus der Widget-Konfiguration; ändert die Seite sie, muss der Adapter angepasst werden.
+- Hohe Terminmenge (rund 540 je 28 Tage) → größerer Anteil im XML.
 
 ## 9. Schützenhaus Münchberg
 
@@ -1301,7 +1392,7 @@ Nicht gespeichert: Kategorie, Veranstalter, Telefon, E-Mail, Langtext, Bild, Koo
 
 ---
 
-## DAS ZENTRUM vs. Bayreuth Tourismus (Analyse 2026-10-15, nichts implementiert)
+## DAS ZENTRUM vs. Bayreuth Tourismus (Analyse 2026-10-15; umgesetzt als Ortsausschluss A91, siehe Abschnitt 8)
 
 Stichprobe: **alle 73** Termine von DAS ZENTRUM (API) gegen die Regional-API von Bayreuth Tourismus, gefiltert auf den
 Ort „DAS ZENTRUM - Internationales Jugendkulturzentrum Bayreuth e.V.“ (`venueIds=e7cac5bf-…`, 1 Request, **50 Termine**).

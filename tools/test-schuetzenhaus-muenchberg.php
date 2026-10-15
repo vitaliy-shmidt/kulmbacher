@@ -84,7 +84,7 @@ $std    = array( '<span>Krimi-Herbst</span> | <span>Vortrag</span>', 'Joe Bausch
 echo "Registrierung\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['schuetzenhaus-muenchberg'] ), true );
-ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach' ) );
+ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'schuetzenhaus-muenchberg' ), 'Schützenhaus Münchberg' );
 ec_check( 'Crawl-URL', $source->get_url(), 'https://schuetzenhaus-muenchberg.de/veranstaltungen/' );
 

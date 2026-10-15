@@ -72,6 +72,10 @@ echten Terminen geprüft (04-quellen.md Abschnitt 5).
 **Ebenso Schützenhaus Münchberg (2026-10-15):** automatisch in allen Auswahlfeldern, „Quelle 1 von 6“ bis „Quelle 6 von
 6“. Suche: Titel („Bausch“ 1), Beschreibung („Stadtrundgang“ 2, „Grüne“ 1), Ort („Schützenhaus Münchberg“ 46), Adresse
 („Hofer Straße“ 46), Stadt („Münchberg“ 46). Detail-Modal mit 6 echten Terminen geprüft.
+**Ebenso Bayreuth Tourismus (2026-10-15):** „Quelle 1 von 10“ bis „Quelle 10 von 10“; Suche: Titel („Stuttgarter“ 1),
+Beschreibung („Saint-Saëns“ 1), Ort („Friedrichsforum“ 13), Adresse („Hugenottenstra“ 1), Stadt („Bayreuth“ 538 der
+Quelle, 612 gesamt mit DAS ZENTRUM). „gefunden“ zählt die Termine nach dem Ausschluss des Orts DAS ZENTRUM (A91).
+Modal mit 5 Terminen geprüft.
 **Ebenso Kronach (2026-10-15):** „Quelle 1 von 9“ bis „Quelle 9 von 9“; Suche: Titel („Ninotschka“ 2), Ort
 („Kreiskulturraum“ 3), Adresse („Siechenanger“ 13), Stadt („Nordhalben“ 1, „Kronach“ 103); Beschreibung ist bei dieser
 Quelle leer. Modal mit 5 Terminen geprüft.

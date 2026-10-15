@@ -99,7 +99,7 @@ $parse  = function ( array $items, array $details ) use ( $source ) {
 echo "Registrierung\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['theater-selb'] ), true );
-ec_check( 'Reihenfolge der Quellen', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach' ) );
+ec_check( 'Reihenfolge der Quellen', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'theater-selb' ), 'Theater Selb' );
 ec_check( 'Crawl-URL', $source->get_url(), 'https://www.theater-selb.de/spielplan/' );
 

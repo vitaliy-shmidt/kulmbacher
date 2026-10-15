@@ -97,7 +97,7 @@ $one    = function ( array $item ) use ( $source ) {
 echo "Registrierung\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['das-zentrum-bayreuth'] ), true );
-ec_check( 'Reihenfolge der Quellen', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach' ) );
+ec_check( 'Reihenfolge der Quellen', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'das-zentrum-bayreuth' ), 'DAS ZENTRUM Bayreuth' );
 ec_check( 'Crawl-URL', $source->get_url(), 'https://www.das-zentrum.de/wp-json/tribe/events/v1/events' );
 ec_check( 'Matching nicht über URL', $source->has_unique_detail_urls(), false );

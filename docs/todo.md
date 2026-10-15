@@ -1,6 +1,6 @@
 # TODO – priorisierte Aufgabenliste
 
-Stand: 2026-10-15 (neunte aktive Quelle Kronach). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
+Stand: 2026-10-15 (zehnte aktive Quelle Bayreuth Tourismus). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
 
 ## Phase 1 – Dokumentation
 
@@ -240,17 +240,14 @@ Stand: 2026-10-15 (neunte aktive Quelle Kronach). Erledigte Punkte abhaken, neue
 - [x] Live: 73 neu, zweiter Crawl 73 unverändert; „Alle Quellen“ mit 5 Quellen (~113 s, längste Quelle Theater Selb ~46 s)
 - [x] UPDATE-, Fehler- und Filtertests, Detail-Modal (5 Termine), Suche, XML, Link-Bezeichnung (Test, wieder entfernt)
 - [x] `tools/test-das-zentrum-bayreuth.php` (45 Tests); Regression 97 / 90 / 38
-- [x] Überschneidung mit Bayreuth Tourismus analysiert (ca. 40 von 73), nichts implementiert → 04-quellen.md
+- [x] Überschneidung mit Bayreuth Tourismus analysiert (ca. 40 von 73), damals nichts implementiert (seit 2026-10-15 umgesetzt als A91) → 04-quellen.md
 - [ ] **Kunde:** Kleinkunstbühne bekommt Stadt „Bayreuth“ über die Ort-ID (A82), aber keine Straße. Soll die Hausadresse
       „Äußere Badstraße 7a“ auch für die Kleinkunstbühne gesetzt werden?
 - [ ] **Kunde:** „Ausverkauft“ (3 Termine) steht nur im HTML der Website, nicht in der API – übernehmen? (bräuchte
       zusätzlichen Abruf und ein Feld bzw. eine Regel)
 - [ ] **Redaktion:** Link-Bezeichnung `www.das-zentrum.de` → z. B. „DAS ZENTRUM Bayreuth“ anlegen?
-- [ ] **Kunde, vor Anbindung von Bayreuth Tourismus:** Strategie gegen Doppelungen (Vorschlag: Termine des Orts „DAS
-      ZENTRUM“ bei Bayreuth Tourismus nicht übernehmen, Quelle mit Vorrang je Ort). Ohne Entscheidung stünden ca. 40
-      Termine doppelt im XML, meist mit unterschiedlichem Titel
-- [ ] Vor einem Adapter für Bayreuth Tourismus prüfen, ob `wp_remote_get()` die TLS-Kette von `api.region-bayreuth.de`
-      verifiziert (Git-curl/OpenSSL: nein, Windows-curl: ja)
+- [x] Strategie gegen Doppelungen mit Bayreuth Tourismus: Ort DAS ZENTRUM dort nicht übernehmen (A91, 2026-10-15)
+- [x] TLS `api.region-bayreuth.de` mit `wp_remote_get()` geprüft: verifiziert (2026-10-15)
 
 ## Sechste aktive Quelle: Schützenhaus Münchberg (2026-10-15)
 
@@ -261,6 +258,18 @@ Stand: 2026-10-15 (neunte aktive Quelle Kronach). Erledigte Punkte abhaken, neue
 - [x] `tools/test-schuetzenhaus-muenchberg.php` (35 Tests); Regression 97 / 90 / 38 / 45
 - [ ] **Redaktion:** Link-Bezeichnung `schuetzenhaus-muenchberg.de` → z. B. „Schützenhaus Münchberg“ anlegen?
 - [ ] Quelle: Huebnotix mit Datum „Sa, 27.02.07“ wird übersprungen, bis das Schützenhaus das Jahr korrigiert
+
+## Zehnte aktive Quelle: Bayreuth Tourismus (2026-10-15)
+
+- [x] Zugriff 200, TLS mit WordPress verifiziert; Regional-API, 2 Abrufe (Suche + Ortsfilter DAS ZENTRUM) → 04-quellen.md Abschnitt 8
+- [x] Adapter (A91): Ort DAS ZENTRUM über Venue-ID ausgeschlossen; external_id eventId_Datum_n; keine Core-Änderung
+- [x] Live: 538 neu, zweiter Crawl 538 unverändert; DAS ZENTRUM unverändert; Updates, Fehlerfälle (inkl. TLS, Pagination), Modal, Suche, XML, Link-Bezeichnung
+- [x] `tools/test-bayreuth-tourismus.php` (45 Tests); Regression aller Suites grün; 0 Restdubletten mit DAS ZENTRUM
+- [ ] **Kunde:** rund 540 Termine je 28 Tage aus Bayreuth – Umfang im XML gewünscht? (ggf. später Kategorien/Zeitraum begrenzen)
+- [ ] **Kunde:** „Kreativstammtisch“ wird über `stammtisch` gefiltert – so gewollt?
+- [ ] **Redaktion:** Link-Bezeichnung `region-bayreuth.de` → z. B. „Bayreuth Tourismus“ anlegen?
+- [ ] Beobachten: Datumsverschiebung erzeugt neuen Datensatz (keine Termin-ID in der Quelle); Status nur im Titel
+- [ ] Beobachten: Stadtteil-IDs der Widget-Konfiguration; Ortsfilter DAS ZENTRUM (Venue-ID) bei Änderungen der Datenbank
 
 ## Neunte aktive Quelle: Kronach (2026-10-15)
 
@@ -329,7 +338,7 @@ Quellen danach schrittweise integrieren: jeweils analysieren → Adapter → tes
 - [ ] Kulmbach – **zurückgestellt** (2026-10-15): HTTP 403 für den Plugin-User-Agent, 200 für neutrale Kennung
       (04-quellen.md „Zurückgestellte / schwer erreichbare Quellen“). **Kunde:** Freigabe/API bei der Stadt anfragen
       oder Landkreis Kulmbach als Alternative prüfen lassen (TLS-Kette vorher klären)
-- [ ] Bayreuth Tourismus
+- [x] Bayreuth Tourismus (2026-10-15, siehe Abschnitt „Zehnte aktive Quelle: Bayreuth Tourismus“)
 - [x] Schützenhaus Münchberg (2026-10-15, siehe Abschnitt „Sechste aktive Quelle: Schützenhaus Münchberg“)
 - [ ] Hof
 - [x] Stadtsteinach (2026-10-15, siehe Abschnitt „Siebte aktive Quelle: Stadtsteinach“)

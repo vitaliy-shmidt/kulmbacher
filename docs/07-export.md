@@ -826,3 +826,14 @@ einmal `<h2>Nordhalben</h2>` (Heeresmusikkorps, Nordwaldhalle). Ohne Beschreibun
 Kreiskulturraum, Siechenangerstraße 13. Info: www.kronach.de“. Sonderzeichen „„…““, „”“, „ø“, „ß“, „&amp;“ korrekt.
 Gesamtexport 9 Quellen: 1561 `<p>`, wohlgeformt, Format unverändert. Link-Bezeichnung getestet (`www.kronach.de` →
 „Kronach“, 102 ×), danach gelöscht, Export wieder bytegleich.
+
+## 20. Zehnte Quelle Bayreuth Tourismus im Export (2026-10-15)
+
+Keine Änderung am Exporter. Export nur Bayreuth Tourismus: 529 `<p>` aus 538 Datensätzen (identische Zeilen
+zusammengefasst), 28 `<h1>`, alle `<h2>Bayreuth</h2>`; Kurztext als Beschreibung, z. B. „19:30 Uhr Stuttgarter
+Philharmoniker, Mozart · Saint-Saëns · Strawinsky, Friedrichsforum, Friedrichstraße 19. Info: region-bayreuth.de“.
+Statusangaben stehen wie in der Quelle im Titel („ENTFÄLLT: …“, „AUSVERKAUFT: …“).
+**DAS-ZENTRUM-Doppelungen:** Jeder Titel der Quelle DAS ZENTRUM im Zeitraum (Bosetti, Rolf Miller, Claus von Wagner …)
+steht im Gesamtexport genau **einmal**; die bei Bayreuth Tourismus gelisteten Termine dieses Orts fehlen (A91).
+Gesamtexport 10 Quellen: 2091 `<p>`, wohlgeformt, Format unverändert. Link-Bezeichnung getestet (`region-bayreuth.de` →
+„Bayreuth Tourismus“, 529 ×), danach gelöscht, Export wieder bytegleich.

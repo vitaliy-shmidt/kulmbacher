@@ -273,3 +273,13 @@ wurden **nicht** ergänzt, weil es dafür weder eine Kundenvorgabe noch reale F�
   bestehenden Regeln erfasst (`ausschusssitzung`, `stadtratssitzung`, „enthält“). Im Live-Crawl (28 Tage) 2 gefiltert.
 - Alle 53 verschiedenen Titel des Abrufs gegen die aktiven Regeln geprüft: **0 Fehlalarme**.
 - Bürgermeistersprechstunde, Rentensprechtag, Bürgerversammlung kamen nicht vor. Keine Regel geändert.
+
+## 12. Bayreuth Tourismus: Kurztexte (2026-10-15)
+
+- 541 gültige Termine (28 Tage) mit Titel + Kurztext (höchstens ca. 120 Zeichen) gegen die aktiven Regeln geprüft:
+  **3 Treffer**, alle über den Titel: „Bürgerinnen- und Bürgerversammlung“ (`bürgerversammlung`), 2 × „Kreativstammtisch
+  „Gemeinsam statt einsam““ (`stammtisch`, „enthält“). Der Kreativstammtisch ist ein offenes Treffen unter dem Namen
+  Stammtisch – regelkonform gefiltert; falls der Auftraggeber solche Treffen behalten will, wäre die Regel anzupassen
+  (Backend, keine Codeänderung).
+- **Kein Treffer allein über den Kurztext**; die langen Beschreibungen der Detailseiten werden nicht übernommen.
+- Keine Regel geändert.

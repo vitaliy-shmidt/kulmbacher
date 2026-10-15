@@ -117,7 +117,7 @@ $one    = function ( $item, $venue ) use ( $source ) {
 echo "Registrierung\n";
 $sources = Eventcrawler_Crawler::get_sources();
 ec_check( 'Slug im Register', isset( $sources['stadtsteinach'] ), true );
-ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach' ) );
+ec_check( 'Reihenfolge', array_keys( $sources ), array( 'burg-rabenstein', 'bad-steben', 'coburg', 'theater-selb', 'das-zentrum-bayreuth', 'schuetzenhaus-muenchberg', 'stadtsteinach', 'helmbrechts', 'kronach', 'bayreuth-tourismus' ) );
 ec_check( 'Anzeigename', Eventcrawler_Crawler::get_source_name( 'stadtsteinach' ), 'Stadtsteinach' );
 
 echo "Normaler Termin mit Ende\n";

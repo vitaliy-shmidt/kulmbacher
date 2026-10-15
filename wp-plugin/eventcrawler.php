@@ -33,6 +33,7 @@ require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-sch
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-stadtsteinach.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-helmbrechts.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-kronach.php';
+require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-bayreuth-tourismus.php';
 
 register_activation_hook( __FILE__, array( 'Eventcrawler_Installer', 'activate' ) );
 

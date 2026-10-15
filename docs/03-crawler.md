@@ -45,6 +45,7 @@ Die Schritte 1–2 sind quellenspezifisch (Adapter), die Schritte 3–6 laufen z
 | `includes/sources/class-eventcrawler-source-bad-steben.php` | `Eventcrawler_Source_Bad_Steben` | Adapter Bad Steben über eT4/destination.one (Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-coburg.php` | `Eventcrawler_Source_Coburg` | Adapter Coburg (TYPO3/events2, verlinkte Tagesseiten; Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-theater-selb.php` | `Eventcrawler_Source_Theater_Selb` | Adapter Theater Selb (WordPress, Liste + Detailseite je Termin; Details in 04-quellen.md) |
+| `includes/sources/class-eventcrawler-source-bayreuth-tourismus.php` | `Eventcrawler_Source_Bayreuth_Tourismus` | Adapter Bayreuth Tourismus (Regional-API region-bayreuth.de, 2 Abrufe; Ort DAS ZENTRUM ausgeschlossen, A91; Details in 04-quellen.md Abschnitt 8) |
 | `includes/sources/class-eventcrawler-source-kronach.php` | `Eventcrawler_Source_Kronach` | Adapter Kronach (CMS recon; Datumssuche + Detailseiten je Veranstaltung über „Weitere Termine“; Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-helmbrechts.php` | `Eventcrawler_Source_Helmbrechts` | Adapter Helmbrechts (TYPO3 news + calendarize; Monatsansichten + Detailseite je Veranstaltung; Details in 04-quellen.md) |
 | `includes/sources/class-eventcrawler-source-stadtsteinach.php` | `Eventcrawler_Source_Stadtsteinach` | Adapter Stadtsteinach (TYPO3/calendarize, Listenseiten + Detailseite je Termin; Details in 04-quellen.md) |
@@ -97,9 +98,9 @@ Hilfsfunktionen der Basisklasse:
 Registrierung: `Eventcrawler_Crawler::get_sources()`, erweiterbar über den Filter-Hook `eventcrawler_sources`.
 Registriert sind in dieser Reihenfolge `Eventcrawler_Source_Burg_Rabenstein`, `Eventcrawler_Source_Bad_Steben`,
 `Eventcrawler_Source_Coburg`, `Eventcrawler_Source_Theater_Selb`, `Eventcrawler_Source_Das_Zentrum_Bayreuth` und
-`Eventcrawler_Source_Schuetzenhaus_Muenchberg`, `Eventcrawler_Source_Stadtsteinach`, `Eventcrawler_Source_Helmbrechts`, `Eventcrawler_Source_Kronach`. Eine neue Quelle braucht: Adapterdatei, `require_once` in
+`Eventcrawler_Source_Schuetzenhaus_Muenchberg`, `Eventcrawler_Source_Stadtsteinach`, `Eventcrawler_Source_Helmbrechts`, `Eventcrawler_Source_Kronach`, `Eventcrawler_Source_Bayreuth_Tourismus`. Eine neue Quelle braucht: Adapterdatei, `require_once` in
 `eventcrawler.php` und eine Zeile in `get_sources()`. Admin, Filter, Repository und Export ändern sich dafür nicht (bei
-Coburg, Theater Selb, DAS ZENTRUM, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts und Kronach so umgesetzt).
+Coburg, Theater Selb, DAS ZENTRUM, Schützenhaus Münchberg, Stadtsteinach, Helmbrechts, Kronach und Bayreuth Tourismus so umgesetzt).
 Weitere Adapter werden dort ergänzt. Der Anzeigename im Admin kommt automatisch aus `get_name()`.
 
 ## 4. Internes Event-Format
@@ -648,3 +649,41 @@ und baut die Detail-URL selbst (`absolute_url()` entfernt die Query, die hier di
 - Strikt nacheinander, „Quelle 1 von 9“ bis „Quelle 9 von 9“; der Browser-AJAX-Lauf lief stabil durch.
 - Kein Einzelrequest nahe 120 s (längster Helmbrechts/Stadtsteinach ~76 s, 64 %). Die Gesamtdauer liegt jetzt bei
   fast 6 Minuten im offenen Browser; ein Hintergrundjob (WP-Cron) bleibt offen (todo.md) und ist bewusst nicht gebaut.
+
+## 21. Zehnte aktive Quelle Bayreuth Tourismus (2026-10-15)
+
+Zugriff vorab geprüft (A85): Website, Kalender, robots.txt, API → 200; TLS der API mit dem CA-Bundle von WordPress und
+`wp_remote_get()` (Standard `sslverify`) erfolgreich. Integration **ohne Änderungen** an Core, Basisklasse, Admin,
+JavaScript, Repository, Filter, Export oder Datenbank: Adapter, `require_once`, eine Zeile in `get_sources()`,
+`tools/test-bayreuth-tourismus.php` (45 Tests); in den Tests der übrigen neueren Quellen nur die Reihenfolge ergänzt.
+Der Ausschluss des Orts DAS ZENTRUM (A91) liegt vollständig im Adapter.
+
+| Test | Ergebnis |
+|---|---|
+| Parser offline (echte API-Antwort 28 Tage + Ortsfilter) | 563 Termine, 15 DAS ZENTRUM ausgeschlossen, 548 geliefert, 541 gültig, 7 ohne Ort |
+| Live-Crawl 1 (Alle Quellen) / Live-Crawl 2 (nur Bayreuth Tourismus) | 548 gefunden, 538 neu, 3 gefiltert, 7 fehlerhaft / 0 neu, 0 aktualisiert, 538 unverändert, Hashes gleich; **2 Abrufe**, 3–4 s |
+| DAS ZENTRUM nach beiden Läufen | 73 Datensätze, `content_hash` und `updated_at` unverändert; 0 Bayreuth-Tourismus-Datensätze am Ort DAS ZENTRUM |
+| Änderungen (veränderte Kopie der API-Antwort) | Titel, Kurztext, Beginn, Ende, Ort, Adresse, Stadt, URL → 8 × UPDATE desselben Datensatzes; Datum +1 Tag → neuer Datensatz (dokumentierte Grenze); Filterbegriff → gefiltert |
+| HTTP 403/429/503/500, Netzwerkfehler, **TLS-Fehler (cURL 60)**, leere Antwort, kaputtes JSON, leere Ergebnisliste, **Pagination bricht ab** (Seite 2: 500), **Ortsfilter-Abruf 500** | Quellenfehler, Daten unverändert (Prüfsumme inkl. `last_seen_at`) |
+| „Alle Quellen“, Quellen 1–9 als Fehler | „1 von 10 Quellen erfolgreich“, Bayreuth Tourismus normal |
+| Hash / doppelte `external_id` | 0 / 0 (2238 Events); keine PHP-Warnings, keine JS-Fehler |
+
+### Laufzeiten „Alle Quellen“ mit 10 aktiven Quellen (live, 2026-10-15, Edge headless)
+
+| Quelle | Abrufe | Request | Ergebnis |
+|---|---|---|---|
+| Burg Rabenstein | 1 | 1,7 s | 151 unverändert |
+| Bad Steben | 2 | 12,5 s | 1 neu, 464 unverändert |
+| Coburg | ca. 15 | 44,5 s | 353 unverändert, 1 fehlerhaft |
+| Theater Selb | 31 | 45,7 s | 29 unverändert, 1 gefiltert |
+| DAS ZENTRUM Bayreuth | 2 | 4,7 s | 73 unverändert |
+| Schützenhaus Münchberg | 1 | 6,4 s | 46 unverändert, 1 fehlerhaft |
+| Stadtsteinach | 52 | 76,5 s | 41 unverändert, 6 fehlerhaft |
+| Helmbrechts | 44 | 75,9 s | 47 unverändert, 2 fehlerhaft |
+| Kronach | 45 | 69,8 s | 103 unverändert, 2 gefiltert, 1 fehlerhaft |
+| Bayreuth Tourismus | 2 | 3,8 s | 548 gefunden (15 DAS ZENTRUM vorher ausgeschlossen), 538 neu, 3 gefiltert, 7 fehlerhaft |
+| **Summe** | ca. 195 | **ca. 342 s** (Browser-Lauf ca. 6 min inkl. Anmeldung/Reload) | 1870 gefunden, 539 neu, 0 aktualisiert, 1307 unverändert, 6 gefiltert, 18 fehlerhaft |
+
+- Strikt nacheinander, „Quelle 1 von 10“ bis „Quelle 10 von 10“; Browser-AJAX stabil.
+- Bayreuth Tourismus verlängert den Gesamtlauf kaum (API, eine Seite). Längster Einzelrequest weiter Stadtsteinach /
+  Helmbrechts (~76 s, 64 % von 120 s).

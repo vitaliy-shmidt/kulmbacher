@@ -155,14 +155,20 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   - 103 von 106 Terminen gespeichert (2 Sitzungen gefiltert, 1 ohne Ort); Fremdort Nordhalben korrekt
   - Integration ohne Änderung an Core, Admin, JS, Filter, Export und DB; „Alle Quellen“ mit 9 Quellen ~340 s
   - Tests: `tools/test-kronach.php` (46 Tests)
+- **Zehnte aktive Quelle Bayreuth Tourismus (2026-10-15):** erledigt und getestet (siehe [04-quellen.md](04-quellen.md) Abschnitt 8):
+  - Regional-API (region-bayreuth.de), 2 Abrufe in ~4 s; TLS mit WordPress verifiziert
+  - Termine am Ort DAS ZENTRUM werden nicht übernommen (Venue-ID, A91) – keine Doppelungen mit der Quelle DAS ZENTRUM
+  - Matching über eventId + Datum; 538 Termine gespeichert (28 Tage), 3 gefiltert, 7 ohne Ort
+  - Integration ohne Änderung an Core, Admin, JS, Filter, Export und DB; „Alle Quellen“ mit 10 Quellen ~342 s
+  - Tests: `tools/test-bayreuth-tourismus.php` (45 Tests)
 - **Noch nicht implementiert:**
   - Export nach frei wählbarem Datumsbereich, Stadt oder Checkbox-Auswahl
   - Listenfilter nach Stadt (derzeit über die Suche)
-  - weitere Quellen ab der zehnten
+  - weitere Quellen ab der elften
   - automatischer Crawl (Cron), bewusst nicht im MVP
 - **Quellen:** Burg Rabenstein, Bad Steben, Coburg, Theater Selb, DAS ZENTRUM Bayreuth, Schützenhaus Münchberg und
-  Stadtsteinach, Helmbrechts und Kronach sind analysiert und angebunden (9 aktive Quellen).
-  Bayreuth Tourismus ist vorgeprüft. **Zurückgestellt** (Server sperren den User-Agent „Eventcrawler“, keine Umgehung,
+  Stadtsteinach, Helmbrechts, Kronach und Bayreuth Tourismus sind analysiert und angebunden (10 aktive Quellen).
+  **Zurückgestellt** (Server sperren den User-Agent „Eventcrawler“, keine Umgehung,
   A85): Neustadt bei Coburg (HTTP 503) und Kulmbach (HTTP 403) – siehe [04-quellen.md](04-quellen.md) „Zurückgestellte /
   schwer erreichbare Quellen“. Die übrigen Quellen und die geplante Nürnberg/Fürth-Quelle sind dokumentiert, aber
   **nicht technisch analysiert**.
@@ -182,7 +188,7 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | Admin-Menü / Seitentitel | „Eventcrawler“ / „Importierte Veranstaltungen“ |
 | Admin-Seiten | `wp-admin/admin.php?page=eventcrawler` (Importierte Veranstaltungen, mit Detail-Modal), `wp-admin/admin.php?page=eventcrawler-filter` (Filterregeln), `wp-admin/admin.php?page=eventcrawler-domains` (Link-Bezeichnungen) |
 | AJAX-Aktionen | `eventcrawler_crawl_source` (eine Quelle crawlen), `eventcrawler_get_event_details` (gespeicherte Werte eines Events, nur lesend) |
-| Quellen (Slug) | `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach` |
+| Quellen (Slug) | `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach`, `bayreuth-tourismus` |
 | Hooks | `eventcrawler_sources` (Adapter registrieren), `eventcrawler_filter_rules` (aktive Filterregeln zur Laufzeit; ersetzt `eventcrawler_exclude_terms`), `eventcrawler_export_display_url` (sichtbare URL im XML nach Link-Bezeichnung, 07-export.md 10.2/13) |
 | Anforderungen | WordPress ≥ 6.0, PHP ≥ 7.4 (getestet mit WordPress 7.1.2, PHP 8.3.12, MariaDB 10.4.32) |
 
@@ -239,6 +245,10 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 - Parsertests Kronach (eingebettete HTML-Ausschnitte, keine HTTP-Abrufe, keine DB-Änderung):
   ```
   C:\xampp\php\php.exe tools\test-kronach.php <pfad\zu\wp-load.php>
+  ```
+- Parsertests Bayreuth Tourismus (eingebettete JSON-Antworten, keine HTTP-Abrufe, keine DB-Änderung):
+  ```
+  C:\xampp\php\php.exe tools\test-bayreuth-tourismus.php <pfad\zu\wp-load.php>
   ```
 
 ## Dokumente
