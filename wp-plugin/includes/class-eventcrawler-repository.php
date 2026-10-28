@@ -45,6 +45,17 @@ class Eventcrawler_Repository {
 	const SORTABLE = array( 'start_date', 'title', 'city', 'source', 'last_seen_at' );
 
 	/**
+	 * Spalten für das öffentliche Frontend (docs/10-frontend.md): keine internen Felder wie external_id, event_key,
+	 * content_hash, source_url oder Zeitstempel.
+	 */
+	const PUBLIC_COLUMNS = 'id, source, title, description, start_date, start_time, end_date, end_time, all_day, venue_name, venue_address, city, event_url';
+
+	/**
+	 * Reihenfolge im Frontend: Tag, dann Termine ohne Uhrzeit zuerst (wie die Tagesliste von WPEM), dann Uhrzeit, Titel.
+	 */
+	const PUBLIC_ORDER = 'start_date ASC, start_time IS NOT NULL ASC, start_time ASC, title ASC, id ASC';
+
+	/**
 	 * @var wpdb
 	 */
 	private $wpdb;
@@ -202,6 +213,73 @@ class Eventcrawler_Repository {
 	}
 
 	/**
+	 * Seite der öffentlichen Liste (Frontend), nur PUBLIC_COLUMNS.
+	 *
+	 * @param array $filters  Siehe where_clause().
+	 * @param int   $per_page Einträge je Seite.
+	 * @param int   $page     1-basiert.
+	 * @return array[]
+	 */
+	public function get_public_events( array $filters, $per_page, $page ) {
+		list( $where, $params ) = $this->where_clause( $filters );
+		$per_page = max( 1, (int) $per_page );
+		$params[] = $per_page;
+		$params[] = ( max( 1, (int) $page ) - 1 ) * $per_page;
+
+		return $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				'SELECT ' . self::PUBLIC_COLUMNS . " FROM {$this->table} {$where} ORDER BY " . self::PUBLIC_ORDER . ' LIMIT %d OFFSET %d',
+				$params
+			),
+			ARRAY_A
+		);
+	}
+
+	/**
+	 * Termine eines Zeitraums für den Kalender: nur die Spalten, die das Monatsraster braucht.
+	 *
+	 * @param array $filters Siehe where_clause() (date_from/date_to = Monat).
+	 * @return array[]
+	 */
+	public function get_calendar_events( array $filters ) {
+		list( $where, $params ) = $this->where_clause( $filters );
+		$sql = "SELECT id, title, start_date, start_time, all_day FROM {$this->table} {$where} ORDER BY " . self::PUBLIC_ORDER;
+
+		return $this->wpdb->get_results( $params ? $this->wpdb->prepare( $sql, $params ) : $sql, ARRAY_A );
+	}
+
+	/**
+	 * Städte mit Terminen (für die Stadtauswahl im Frontend), alphabetisch.
+	 *
+	 * @param array $filters Siehe where_clause().
+	 * @return string[]
+	 */
+	public function get_cities( array $filters = array() ) {
+		list( $where, $params ) = $this->where_clause( $filters );
+		$sql = "SELECT DISTINCT city FROM {$this->table} {$where} ORDER BY city ASC";
+
+		return $this->wpdb->get_col( $params ? $this->wpdb->prepare( $sql, $params ) : $sql );
+	}
+
+	/**
+	 * Werte einer Textspalte der manuellen Termine (Vorschläge im Formular), alphabetisch, ohne leere Werte.
+	 *
+	 * @param string $column venue_name oder city.
+	 * @return string[]
+	 */
+	public function get_distinct_values( $column ) {
+		if ( ! in_array( $column, array( 'venue_name', 'city' ), true ) ) {
+			return array();
+		}
+		return $this->wpdb->get_col(
+			$this->wpdb->prepare(
+				"SELECT DISTINCT {$column} FROM {$this->table} WHERE source = %s AND {$column} IS NOT NULL AND {$column} <> '' ORDER BY {$column} ASC LIMIT 500",
+				Eventcrawler_Manual_Events::SOURCE
+			)
+		);
+	}
+
+	/**
 	 * Jahre, in denen Events beginnen, aufsteigend (für die Jahr-Auswahl).
 	 *
 	 * @return int[]
@@ -218,7 +296,11 @@ class Eventcrawler_Repository {
 	 *     @type string $source Quellen-Slug.
 	 *     @type int    $month  1–12; ohne Jahr: dieser Monat in allen Jahren.
 	 *     @type int    $year   z. B. 2026; mit Monat: genau dieser Monat.
-	 *     @type string $search Teilstring in Titel, Beschreibung, Ort, Stadt (Collation: ohne Groß-/Kleinschreibung).
+	 *     @type string   $search    Teilstring in Titel, Beschreibung, Ort, Stadt (Collation: ohne Groß-/Kleinschreibung).
+	 *     @type string[] $sources   Frontend: nur diese Quellen-Slugs.
+	 *     @type string   $date_from Frontend: start_date ab diesem Tag (Y-m-d).
+	 *     @type string   $date_to   Frontend: start_date bis einschließlich diesem Tag (Y-m-d).
+	 *     @type string   $city      Frontend: exakt diese Stadt.
 	 * }
 	 * @return array array( 'WHERE …' oder '', Parameter für prepare() ).
 	 */
@@ -229,6 +311,25 @@ class Eventcrawler_Repository {
 		if ( ! empty( $filters['source'] ) ) {
 			$conditions[] = 'source = %s';
 			$params[]     = $filters['source'];
+		}
+
+		if ( ! empty( $filters['sources'] ) && is_array( $filters['sources'] ) ) {
+			$conditions[] = 'source IN (' . implode( ',', array_fill( 0, count( $filters['sources'] ), '%s' ) ) . ')';
+			$params       = array_merge( $params, array_values( $filters['sources'] ) );
+		}
+
+		if ( ! empty( $filters['date_from'] ) ) {
+			$conditions[] = 'start_date >= %s';
+			$params[]     = $filters['date_from'];
+		}
+		if ( ! empty( $filters['date_to'] ) ) {
+			$conditions[] = 'start_date <= %s';
+			$params[]     = $filters['date_to'];
+		}
+
+		if ( isset( $filters['city'] ) && '' !== $filters['city'] ) {
+			$conditions[] = 'city = %s';
+			$params[]     = $filters['city'];
 		}
 
 		$month = empty( $filters['month'] ) ? 0 : (int) $filters['month'];

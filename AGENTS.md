@@ -15,7 +15,9 @@ Die verbindlichen Entwicklungsregeln stehen in `docs/README.md`. Die wichtigsten
 - Unklare Daten überspringen statt falsch speichern. Keine Quelle als funktionierend markieren, bevor sie getestet ist.
 - XML-Format (`docs/07-export.md`) nie ohne ausdrückliche Anweisung ändern.
 - Admin-Menü heißt „Eventcrawler“, nicht „Veranstaltungen“; das Menü eines anderen Plugins nie verändern.
-- Zum vorhandenen manuellen Veranstaltungs-Plugin besteht nur **fachliche** Kompatibilität (`docs/08-kompatibilitaet.md`).
-  Keine Annahmen über dessen CPT, Meta-Keys, Tabellen oder API treffen.
+- Das Kundenplugin „WP Kulmbacher Land“ (`wp-events-manager`, WPEM) wird durch den Eventcrawler ersetzt
+  (`docs/10-frontend.md`). `{prefix}eventcrawler_events` ist die einzige Datenquelle: keine Synchronisation nach WPEM,
+  keine Kopie in `wp_posts`. WPEM-Daten nur lesend und nur für die einmalige Übernahme verwenden; das Plugin selbst nie
+  ändern. Manuelle Termine haben `source = manual`; gecrawlte Termine werden im Admin nicht bearbeitet.
 - Schema-Änderungen: `EVENTCRAWLER_DB_VERSION` erhöhen; Umbenennungen per Migration **vor** `dbDelta()` (docs/02-datenbank.md Abschnitt 10).
 - Beim Entwickeln von Adaptern: Quelle höflich behandeln (HTML lokal zwischenspeichern, Parser offline testen, nur lesende GETs).

@@ -37,7 +37,7 @@
 | Feld | Typ | Null | Beschreibung |
 |---|---|---|---|
 | `id` | `BIGINT(20) UNSIGNED AUTO_INCREMENT` | nein | Primärschlüssel |
-| `source` | `VARCHAR(50)` | nein | Slug des Source Adapters, z. B. `burg-rabenstein`. `dev-test` ist für Entwickler-Testdaten reserviert |
+| `source` | `VARCHAR(50)` | nein | Slug des Source Adapters, z. B. `burg-rabenstein`. `dev-test` ist für Entwickler-Testdaten reserviert. **`manual`** = manuell gepflegter Termin (seit 2026-10-28, kein Adapter, wird nie gecrawlt, 10-frontend.md) |
 | `external_id` | `VARCHAR(191)` | ja | stabile Event-ID der Quelle, falls vorhanden |
 | `event_key` | `CHAR(40)` | nein | technischer Hilfsschlüssel (SHA-1) für das Fallback-Matching, Abschnitt 4. **Nicht eindeutig** |
 | `title` | `VARCHAR(255)` | nein | Titel (Klartext) |
@@ -135,6 +135,10 @@ Bewusst **nicht** enthalten, als spätere Felder denkbar: `organizer`, `meeting_
 `image_url`, `status` (z. B. abgesagt), `locked_fields`, `ignored_at`.
 
 ## 3. external_id
+
+- **Manuelle Termine** (`source = manual`): `NULL` bei Anlage im Formular; `wpem-{Post-ID}` bei der Übernahme aus
+  WP Kulmbacher Land (Idempotenz über den UNIQUE-Index, 10-frontend.md Abschnitt 10). Beim Bearbeiten bleibt sie
+  unverändert. `source_url` ist bei manuellen Terminen immer `NULL`.
 
 - Wird vom Adapter gesetzt, wenn die Quelle eine **eindeutige, stabile** ID pro Termin liefert.
 - Burg Rabenstein hat keine (04-quellen.md).
@@ -254,7 +258,11 @@ Später: Ignore-/Blacklist (`ignored_at` oder kleine Tabelle), Option „Daten b
 | `get_events_for_export( $filters )` | `array[]` | alle bzw. gefilterte Datensätze ohne Paginierung; `ORDER BY start_date, city, start_time IS NULL, start_time, title, id` |
 | `count_events( $filters )` | `int` | Anzahl, optional gefiltert |
 | `get_available_years()` | `int[]` | `DISTINCT YEAR(start_date)` aufsteigend, für die Jahr-Auswahl |
-| `where_clause( $filters )` (privat) | `array` | **eine** gemeinsame WHERE-Bedingung für Liste, Zählung und Export: `source`, `month` (ohne Jahr: `MONTH(start_date)`), `year` bzw. Monat + Jahr (Datumsbereich auf `start_date`), `search` (`LIKE` auf title/description/venue_name/city mit `esc_like`). Erwartet validierte Werte (`Eventcrawler_Admin::read_filters()`) |
+| `get_public_events( $filters, $per_page, $page )` | `array[]` | Frontend (seit 2026-10-28): nur `PUBLIC_COLUMNS`, `ORDER BY start_date, start_time IS NOT NULL, start_time, title, id` (ohne Uhrzeit zuerst), `LIMIT/OFFSET` |
+| `get_calendar_events( $filters )` | `array[]` | Kalender: `id, title, start_date, start_time, all_day` eines Zeitraums |
+| `get_cities( $filters )` | `string[]` | `DISTINCT city` für die Stadtauswahl im Frontend |
+| `get_distinct_values( $column )` | `string[]` | Vorschläge `venue_name`/`city` aus manuellen Terminen (Formular), max. 500 |
+| `where_clause( $filters )` (privat) | `array` | **eine** gemeinsame WHERE-Bedingung für Liste, Zählung, Export und Frontend: `source`, `month` (ohne Jahr: `MONTH(start_date)`), `year` bzw. Monat + Jahr (Datumsbereich auf `start_date`), `search` (`LIKE` auf title/description/venue_name/venue_address/city mit `esc_like`); seit 2026-10-28 zusätzlich `sources` (`IN`), `date_from`/`date_to` (`start_date >=`/`<=`), `city` (exakt). Erwartet validierte Werte (`Eventcrawler_Admin::read_filters()` bzw. `Eventcrawler_Frontend`) |
 | `insert( $data )` | `int\|false` | nur erlaubte Spalten (`COLUMNS`); Zeitstempel automatisch, falls sie fehlen |
 | `update( $id, $data )` | `bool` | nur erlaubte Spalten; `NULL` schreibt NULL |
 | `delete( $id )` | `bool` | |

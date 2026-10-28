@@ -3,6 +3,9 @@
 > **Stand 2026-09-30.** Erstellt beim Kundenfeedback zum XML (07-export.md Abschnitt 10). Das Kundenplugin wurde
 > **nur gelesen und nicht verändert**. Der Eventcrawler verwendet weiterhin **keinen** Code, keine Meta-Keys, keinen
 > CPT und keine Tabellen des Kundenplugins (08-kompatibilitaet.md gilt weiter).
+>
+> **Nachtrag 2026-10-28:** Vollständige Analyse des Plugins und Ersatzplan in [10-frontend.md](10-frontend.md). Seitdem
+> liest der Eventcrawler den WPEM-Bestand einmalig für die Übernahme (nur lesend); das XML-Format bleibt unverändert.
 
 ## 1. Was vorliegt
 

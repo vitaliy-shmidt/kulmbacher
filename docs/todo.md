@@ -1,6 +1,25 @@
 # TODO – priorisierte Aufgabenliste
 
-Stand: 2026-10-15 (zehnte aktive Quelle Bayreuth Tourismus). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
+Stand: 2026-10-28 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
+
+## WPEM-Ersatz (2026-10-28) ← NÄCHSTER SCHRITT
+
+Details, Funktionsmatrix, Entscheidungen E1–E10 und Abschaltplan: [10-frontend.md](10-frontend.md).
+
+- [x] WP Kulmbacher Land vollständig analysiert (Code, echte Exportdatei, URLs/Sitemap/Canonical in der Testinstallation)
+- [x] Manuelle Termine (`source = manual`): anlegen, bearbeiten, duplizieren, löschen; keine Schemaänderung
+- [x] Frontend `[eventcrawler_events]` (Liste/Tagesansicht, Suche, Stadt, Datum, Pagination, Details) und `[eventcrawler_calendar]`
+- [x] Aliase `[events_list]`/`[events_calendar]` ohne aktives WPEM
+- [x] WPEM-Übernahme mit Probelauf, idempotent, exakte Dublettenprüfung
+- [x] Tests `tools/test-frontend.php` (117), HTTP-Sicherheit, Paralleltest, Responsive 1280/768/375, Regression grün, XML bytegleich
+- [ ] **Kunde (E1):** Welche Seiten nutzen `[events_list]`/`[events_calendar]` (Zugang zur Kundeninstallation/Staging)?
+- [ ] **Kunde (E2):** Sind `/veranstaltung/…`/`/veranstaltungsort/…` indexiert/verlinkt? Falls ja: 301-Redirects bauen (10-frontend.md Abschnitt 11)
+- [ ] **Kunde (E3/E4):** Wird der CSV-/XML-Import bzw. CSV-Export von WPEM genutzt? Falls ja: Ersatz vor der Abschaltung
+- [ ] **Kunde (E5):** Öffentlich alle Quellen oder nur manuelle Termine/Auswahl (`sources`)?
+- [ ] **Kunde (E6–E10):** PLZ, vergangene Termine, XML-Zeilenformat manueller Termine, Beschreibungen gecrawlter Termine, Uhrzeiten im Titel
+- [ ] Auf Staging: Probelauf der Übernahme ansehen, Problemfälle in WPEM korrigieren, übernehmen, Paralleltest
+- [ ] Abschaltung nach Plan (10-frontend.md Abschnitt 14), danach Permalinks speichern
+
 
 ## Phase 1 – Dokumentation
 
@@ -98,8 +117,8 @@ Stand: 2026-10-15 (zehnte aktive Quelle Bayreuth Tourismus). Erledigte Punkte ab
 - [x] XML-Export auf neue Felder umgestellt, Format unverändert (byte-identisch), Endzeit nicht exportiert
 - [x] Fehler in `Repository::formats()` gefunden und behoben (Regressionstest)
 - [x] docs/08-kompatibilitaet.md (nur fachliche Kompatibilität)
-- [ ] Technische Integration in das vorhandene manuelle Veranstaltungs-Plugin: erst bei Zugriff auf Code,
-      Installation, Dokumentation und Datenbankstruktur (siehe 08-kompatibilitaet.md)
+- [x] ~~Technische Integration in das vorhandene manuelle Veranstaltungs-Plugin~~ – ersetzt durch den WPEM-Ersatz
+      (2026-10-28, 10-frontend.md): keine Integration/Synchronisation, sondern einmalige Übernahme
 
 ## Zweite Quelle: Bad Steben
 
@@ -329,7 +348,7 @@ schwer erreichbare Quellen“. Grundsatz A85: Sperren werden nicht umgangen.
 - [ ] Vor jeder neuen Quelle zuerst den Zugriff mit dem Plugin-User-Agent **über `wp_remote_get()`** prüfen (TLS-Maßstab
       ist WordPress, A92). Stand 2026-10-15: Hof 503 (Sperre), Thurnau TLS (zurückgestellt), Stadtsteinach/Helmbrechts/Kronach 200
 
-## Phase 6 – weitere Quellen ← NÄCHSTER SCHRITT
+## Phase 6 – weitere Quellen
 
 Bei jeder neuen Quelle die Datenqualität über das Detail-Modal („Details“) prüfen: Adresse, Originaltext der
 Beschreibung, gespeicherte URLs, `external_id`/`event_key`, Uhrzeiten/NULL, `all_day`; danach die Domain der Quelle ggf.
@@ -375,8 +394,8 @@ Quellen danach schrittweise integrieren: jeweils analysieren → Adapter → tes
       (Derzeit gespeichert: city „Ahorntal“, venue_name „Burg Rabenstein“)
 - [ ] Soll die Endzeit im XML erscheinen („18:00–22:00 Uhr“)? Gespeichert wird sie seit Schema-Version 2
 - [ ] Soll der Preis gespeichert werden? Burg Rabenstein liefert ihn; das Schema speichert ihn nicht
-- [ ] Zugriff auf das vorhandene manuelle Veranstaltungs-Plugin (Code, Testinstallation, Doku, DB-Struktur), falls eine
-      technische Integration gewünscht ist
+- [x] Code des manuellen Veranstaltungs-Plugins liegt vor und ist analysiert (2026-10-28); Zugang zur
+      **Kundeninstallation** fehlt weiterhin (E1/E2 in 10-frontend.md)
 - [ ] Rechtliche Freigabe zur Übernahme von Texten der Quellen (Urheberrecht, Nutzungsbedingungen)
 - [ ] Soll ein gespeichertes Event gelöscht werden, wenn es nach einer Änderung in der Quelle unter einen Filter fällt?
 
@@ -387,7 +406,7 @@ Quellen danach schrittweise integrieren: jeweils analysieren → Adapter → tes
 - [ ] Option „Daten bei Deinstallation löschen“
 - [ ] Bereinigung vergangener bzw. nicht mehr gefundener Events
 - [ ] Erkennung quellenübergreifender Duplikate
-- [ ] Manuell gesperrte Felder, Bearbeiten im Backend (das Detail-Modal ist bewusst nur lesend)
+- [ ] Manuell gesperrte Felder bzw. Bearbeiten **gecrawlter** Termine (manuelle Termine sind seit 2026-10-28 bearbeitbar)
 - [ ] Änderungshistorie
 - [x] Filterbegriffe im Backend pflegen (2026-09-26, siehe Abschnitt „Filterregeln im Backend“)
 - [ ] Filterregeln: Reihenfolge ändern, Import/Export der Regelliste, Protokoll „warum gefiltert“

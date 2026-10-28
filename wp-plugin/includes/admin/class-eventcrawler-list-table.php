@@ -206,6 +206,19 @@ class Eventcrawler_List_Table extends WP_List_Table {
 			),
 		);
 
+		// Nur manuelle Termine sind bearbeitbar; gecrawlte ändert ausschließlich der Crawler (docs/10-frontend.md).
+		if ( Eventcrawler_Manual_Events::SOURCE === $item['source'] ) {
+			array_splice(
+				$links,
+				1,
+				0,
+				array(
+					sprintf( '<a href="%s">Bearbeiten</a>', esc_url( Eventcrawler_Manual_Events::edit_url( $id ) ) ),
+					sprintf( '<a href="%s">Duplizieren</a>', esc_url( add_query_arg( array( 'page' => Eventcrawler_Manual_Events::PAGE_SLUG, 'copy' => $id ), admin_url( 'admin.php' ) ) ) ),
+				)
+			);
+		}
+
 		if ( ! empty( $item['source_url'] ) ) {
 			$links[] = sprintf(
 				'<a href="%s" target="_blank" rel="noopener noreferrer">Quelle ansehen</a>',

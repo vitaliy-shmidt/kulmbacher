@@ -9,9 +9,12 @@
 > - **Stand 2026-09-26:** Untermenü „Filterregeln“ (Abschnitt 9)
 > - **Stand 2026-10-06:** Untermenü „Link-Bezeichnungen“ (Abschnitt 10) und read-only Detail-Modal „Details“ in der
 >   Liste (Abschnitt 11)
+> - **Stand 2026-10-28:** manuelle Veranstaltungen „Veranstaltung hinzufügen“ (Abschnitt 12) und „WPEM-Übernahme“
+>   (Abschnitt 13), Ersatz für das Kundenplugin WP Kulmbacher Land (10-frontend.md)
 >
 > Code: `wp-plugin/includes/admin/class-eventcrawler-admin.php`, `class-eventcrawler-list-table.php`,
-> `class-eventcrawler-filter-admin.php` und `class-eventcrawler-domain-admin.php`, Skript/CSS in `wp-plugin/assets/`,
+> `class-eventcrawler-filter-admin.php`, `class-eventcrawler-domain-admin.php`, `class-eventcrawler-event-admin.php` und
+> `class-eventcrawler-wpem-admin.php`, Skript/CSS in `wp-plugin/assets/`,
 > Filter-SQL in `Eventcrawler_Repository::where_clause()`
 
 ## 1. Menü
@@ -28,6 +31,11 @@
     ersten Unterpunkt „Eventcrawler“ nennen
   - **„Filterregeln“** (`page=eventcrawler-filter`, Abschnitt 9), ebenfalls nur `manage_options`
   - **„Link-Bezeichnungen“** (`page=eventcrawler-domains`, Abschnitt 10, seit 2026-10-06), ebenfalls nur `manage_options`
+  - **„Veranstaltung hinzufügen“** (`page=eventcrawler-event`, Abschnitt 12, seit 2026-10-28), steht direkt nach der
+    Hauptseite; außerdem Button „Veranstaltung hinzufügen“ neben der Überschrift der Liste
+  - **„WPEM-Übernahme“** (`page=eventcrawler-wpem`, Abschnitt 13, seit 2026-10-28), nur sichtbar, solange
+    `wpem_event`-Beiträge in der Datenbank stehen
+- Der Menüpunkt „Veranstaltungen“ von WP Kulmbacher Land bleibt unverändert, solange das Plugin aktiv ist.
 
 ## 2. Aufbau der Seite
 
@@ -53,6 +61,10 @@ keine doppelten IDs (getestet: keine doppelte `id` auf der Seite):
 | Tabelle (Bulk-Löschen) | POST auf die aktuelle, gefilterte Listen-URL | `ids[]`, Bulk-Aktion | `bulk-events` im Feld `_wpnonce` (von `WP_List_Table`) |
 
 ### Quellen dynamisch aus dem Register
+
+**Seit 2026-10-28:** Listen- und Exportfilter zeigen zusätzlich **„Manuell“** (`manual`,
+`Eventcrawler_Admin::filter_source_options()` = Register + `manual`); der Crawler-Dropdown und
+`window.eventcrawlerCrawl.sources` nicht, weil manuelle Termine nie gecrawlt werden (getestet).
 
 Alle drei Quellen-Dropdowns (Crawler, Export, Liste) kommen aus **einer** Stelle:
 `Eventcrawler_Admin::source_options()` liest das Adapter-Register `Eventcrawler_Crawler::get_sources()` (Slug =>
@@ -397,3 +409,47 @@ falscher/fehlender/Crawler-Nonce 403, GET 405, fehlende/ungültige ID inkl. `0`,
 einem Testdatensatz voller `<script>`, `<img onerror>`, `<svg onload>`, `javascript:`-URL und 6 017 Zeichen
 Beschreibung: nichts ausgeführt, kein Tag im Modal-DOM, Beschreibung vollständig, NULL sichtbar, Link nur für
 `https://`, Schließen auf allen vier Wegen, Kopieren, Fehlermeldungen 404/403, Crawler-Steuerung unverändert.
+
+## 12. Manuelle Veranstaltungen „Veranstaltung hinzufügen“ (implementiert 2026-10-28)
+
+Ersatz für die Veranstaltungsverwaltung von WP Kulmbacher Land (10-frontend.md). Manuelle Termine sind Zeilen der
+normalen Tabelle mit `source = manual` (keine Schemaänderung), Anzeigename „Manuell“.
+
+- **Formular** (`admin.php?page=eventcrawler-event`): Titel*, Beschreibung (Klartext), Beginn Datum* + Uhrzeit,
+  Ende Datum + Uhrzeit, Ganztägig, Veranstaltungsort, Adresse (Straße/Nr.), Stadt*, Webseiten-Link. Native Felder
+  `type="date"`/`type="time"`/`type="url"`, Vorschläge für Ort und Stadt aus vorhandenen manuellen Terminen
+  (`<datalist>`). Kein jQuery UI, keine externe Bibliothek.
+- **Bearbeiten** `&id={id}`, **Duplizieren** `&copy={id}` (neuer Termin mit den Werten des alten); beide Links in der
+  Spalte „Aktionen“ der Liste, **nur** bei manuellen Terminen. Für gecrawlte oder unbekannte IDs: HTTP 403 (geprüft im
+  Hook `load-…` vor jeder Ausgabe). Löschen wie bisher über die Liste.
+- **Speichern:** POST `admin-post.php`, `action=eventcrawler_save_event`, `manage_options`, Nonce
+  `eventcrawler_save_event` im Feld `eventcrawler_event_nonce`. Validierung in `Eventcrawler_Manual_Events::prepare()`
+  (dieselben Regeln wie der Crawler, 02-datenbank.md Abschnitt 2); im Formular sind ungültiges Ende und Links ohne
+  http/https **Fehler**. Bei Fehlern zurück zum Formular mit den Eingaben (Transient je Benutzer, 5 min); bei Erfolg
+  zur Liste, gefiltert auf „Manuell“, mit Meldung. `save()` aktualisiert nur Zeilen mit `source = manual` und lässt die
+  `external_id` (z. B. `wpem-123`) unverändert.
+- **Was gespeichert wird:** `source_url = NULL` (sonst „Info:“-Fallback im XML), leere Felder NULL, Uhrzeit nie
+  `00:00` erfunden, `event_key`/`content_hash` wie beim Crawler, `created_at`/`updated_at`/`last_seen_at` = Speicherzeit.
+- **Nicht gebaut:** Bearbeiten gecrawlter Termine (Overrides), Papierkorb/Entwürfe, PLZ, Kategorien, Bilder.
+
+Getestet (2026-10-28): `tools/test-frontend.php` (Normalisierung, Speichern, Bearbeiten, Sperre gecrawlter Termine);
+HTTP: Gast 400, Abonnent 403 (Formular und POST), ohne/falscher Nonce 403, GET 405, Ende vor Beginn → Formular mit
+Fehlermeldung und erhaltenen (escapten) Eingaben, gültig → Liste mit Meldung, UTF-8 korrekt gespeichert, gecrawlten
+Termin per URL bearbeiten/duplizieren 403, per POST überschreiben → Fehler, Datensatz unverändert.
+
+## 13. „WPEM-Übernahme“ (implementiert 2026-10-28)
+
+Einmalige, idempotente Übernahme veröffentlichter WP-Kulmbacher-Land-Termine als manuelle Termine (Mapping:
+10-frontend.md Abschnitt 10). Liest `wp_posts`/`wp_postmeta`/`wp_terms`/`wp_termmeta` direkt und nur lesend, also auch
+bei deaktiviertem WPEM. In WPEM wird nichts verändert (Prüfsummen im Test).
+
+- Die Seite zeigt immer zuerst den **Probelauf**: Anzahl „werden übernommen“, „bereits übernommen“, „Dublette eines
+  vorhandenen Termins“, „unvollständig/ungültig“, „nicht veröffentlicht“; darunter Tabellen der ungültigen Termine,
+  Dubletten (mit Eventcrawler-ID), neuen Termine mit Hinweisen (z. B. verworfener Link) und nicht veröffentlichten
+  (je höchstens 200 Zeilen, mit Link zum WPEM-Beitrag, solange WPEM aktiv ist).
+- **Übernehmen:** Button mit Rückfrage, POST `admin-post.php`, `action=eventcrawler_wpem_migrate`, `manage_options`,
+  Nonce `eventcrawler_wpem_migrate` im Feld `eventcrawler_wpem_nonce`, Laufzeitlimit 300 s. Ergebnis als Meldung.
+- **Idempotenz:** `external_id = wpem-{Post-ID}` mit UNIQUE `(source, external_id)`; ein zweiter Lauf legt nichts an.
+
+Getestet (2026-10-28): Probelauf mit 5 Testterminen (3 neu, 1 ohne Ort, 1 Entwurf), HTTP: Abonnent 403, ohne Nonce 403,
+GET 405, Lauf 1 → 3 übernommen, Lauf 2 → 0; Seite auch bei deaktiviertem WPEM erreichbar.

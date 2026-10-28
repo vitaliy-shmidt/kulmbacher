@@ -6,6 +6,12 @@
 > `C:\xampp\htdocs\kulmbacher\wp-events-manager` vor. Gelesen wurden bisher nur XML-Export und XML-Import
 > (09-wpem-integration.md). Der Eventcrawler nutzt weiterhin nichts davon technisch; die Aussagen unten zu fehlendem
 > Zugriff beziehen sich auf den Stand vom 2026-09-24.
+>
+> **Nachtrag 2026-10-28:** Das Kundenplugin ist jetzt vollständig analysiert (CPT `wpem_event`, Taxonomie `wpem_venue`,
+> Meta-Keys, Shortcodes, URLs) und der Eventcrawler soll es ersetzen: [10-frontend.md](10-frontend.md). Technisch
+> genutzt wird es nur **lesend und einmalig** für die WPEM-Übernahme (Mapping der Felder dort in Abschnitt 10). Eine
+> Synchronisation oder ein Schreiben in WPEM gibt es weiterhin nicht. Die Abschnitte unten beschreiben den Stand
+> vor dieser Analyse.
 
 ## Ausgangslage
 

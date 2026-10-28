@@ -136,8 +136,10 @@ Ohne Kundeninstallation ist nur belegt, **was** das Plugin anbieten würde, nich
 - Detailseiten und Ortsseiten sind also **öffentlich und indexierbar**, sobald die Website Suchmaschinen zulässt.
   Inhaltlich sind sie dünn (kein Datum, kein Ort). Ob sie beim Kunden indexiert oder verlinkt sind, ist lokal nicht
   belegbar (Search Console, E2).
-- Nach dem Deaktivieren von WPEM liefern `/veranstaltung/…` und `/veranstaltungsort/…` **404**; die Posts bleiben in
-  `wp_posts` (Deaktivieren löscht nichts).
+- Nach dem Deaktivieren von WPEM liefern `/veranstaltung/…` und `/veranstaltungsort/…` zunächst **200 mit der
+  Blog-Übersicht** (Soft-404): WPEM ruft beim Deaktivieren `flush_rewrite_rules()` auf, solange sein CPT noch
+  registriert ist, die alten Regeln bleiben also stehen (gemessen). Erst nach erneutem Speichern der Permalinks kommt
+  **404**. Die Posts bleiben in `wp_posts` (Deaktivieren löscht nichts).
 - Die Tagesliste nutzt `?date=JJJJ-MM-TT`. Diesen Parameter übernimmt der Eventcrawler unverändert, damit Links auf
   Tagesansichten weiter funktionieren.
 
@@ -187,11 +189,11 @@ WPEM-Bestand (einmalig) ──────┘                                 �
 
 | Phase | Inhalt | Stand |
 |---|---|---|
-| A | Frontend-Liste `[eventcrawler_events]` (Liste ab Datum und Tagesansicht), Suche, Stadtfilter, Datum, Pagination, aufklappbare Details | siehe Abschnitt 12 |
-| B | Kalender `[eventcrawler_calendar]` | siehe Abschnitt 12 |
-| C | Alias-Shortcodes `[events_list]`/`[events_calendar]` (nur wenn WPEM inaktiv ist) | siehe Abschnitt 12 |
-| D | Manuelle Termine im Admin (anlegen, bearbeiten, duplizieren, löschen) | siehe Abschnitt 12 |
-| E | Einmalige WPEM-Übernahme mit Probelauf (idempotent, ohne Dubletten zu Crawler-Terminen) | siehe Abschnitt 12 |
+| A | Frontend-Liste `[eventcrawler_events]` (Liste ab Datum und Tagesansicht), Suche, Stadtfilter, Datum, Pagination, aufklappbare Details | **erledigt** (Abschnitt 12) |
+| B | Kalender `[eventcrawler_calendar]` | **erledigt** |
+| C | Alias-Shortcodes `[events_list]`/`[events_calendar]` (nur wenn WPEM inaktiv ist) | **erledigt** |
+| D | Manuelle Termine im Admin (anlegen, bearbeiten, duplizieren, löschen) | **erledigt** |
+| E | Einmalige WPEM-Übernahme mit Probelauf (idempotent, ohne Dubletten zu Crawler-Terminen) | **erledigt** (auf dem Kundensystem noch auszuführen) |
 | F | Redirects alter WPEM-URLs, Paralleltest auf dem Kundensystem, Deaktivierung | offen (Abschnitt 11, 14) |
 
 ## 10. Datenmigration WPEM → Eventcrawler
@@ -240,6 +242,87 @@ nicht zusammengeführt (A66, A84).
   - `/veranstaltung/` → Listenseite; `/veranstaltungsort/{slug}/` → Listenseite `?ec_city={Stadt}`
   - Ob das nötig ist, hängt von E2 ab (sind die URLs indexiert/verlinkt?).
 
+## 12. Umsetzung (Stand 2026-10-28, Plugin-Version 0.2.0, Schema unverändert 3)
+
+### Dateien
+
+| Datei | Inhalt |
+|---|---|
+| `includes/frontend/class-eventcrawler-frontend.php` | Shortcodes, Liste, Tagesansicht, Kalender, Filterformular, Pagination |
+| `assets/eventcrawler-frontend.css` | Layout; nur geladen, wenn ein Shortcode auf der Seite steht |
+| `includes/class-eventcrawler-manual-events.php` | Normalisierung und Speicherung manueller Termine (`source = manual`) |
+| `includes/class-eventcrawler-wpem-migration.php` | Probelauf und Übernahme aus WPEM |
+| `includes/admin/class-eventcrawler-event-admin.php` | „Veranstaltung hinzufügen“ (anlegen, bearbeiten, duplizieren) |
+| `includes/admin/class-eventcrawler-wpem-admin.php` | „WPEM-Übernahme“ |
+| `tools/test-frontend.php` | 117 Tests (Liste, Kalender, Aliase, manuelle Termine, Übernahme) |
+
+Kein JavaScript im Frontend: Details klappen mit nativem `<details>` auf, alle Ansichten sind normale GET-Links.
+Keine Nonces nötig, weil das Frontend nur liest; keine AJAX-Endpunkte für Besucher.
+
+### Shortcodes
+
+| Shortcode | Attribute | Ausgabe |
+|---|---|---|
+| `[eventcrawler_events]` | `view` (`list` Standard, `day`), `per_page` (20, max. 100), `sources` (kommagetrennte Slugs, z. B. `manual,coburg`; leer = alle; nur unbekannte Slugs = nichts), `city` (feste Stadt), `date` (Starttag), `show_filters` (1/0), `show_calendar` (1/0) | **Liste:** alle Termine ab Datum (Standard heute), nach Tagen gruppiert, serverseitig paginiert. **Tagesansicht:** ein Tag mit Vor/Zurück wie WPEM. Eine Suche gilt in beiden Ansichten über alle Tage ab Datum |
+| `[eventcrawler_calendar]` | `month`, `year`, `sources`, `link` (URL der Listenseite; Standard: aktuelle Seite) | Monatsraster Mo–So, Vor/Zurück, je Tag Anzahl, bis zu 2 Titel (auf den Termin verlinkt) und „+n weitere“; mobil nur Anzahl |
+| `[events_list]` | `limit`, `date` (wie WPEM; `venue`, `show_past` ohne Wirkung) | **Alias**, nur wenn WPEM inaktiv ist: Tagesansicht |
+| `[events_calendar]` | `month`, `year` | **Alias**, nur wenn WPEM inaktiv ist: Kalender |
+
+GET-Parameter: `date` (JJJJ-MM-TT, wie WPEM), `ec_search`, `ec_city`, `ec_page`, `ec_month` (JJJJ-MM). Ungültige Werte
+werden ignoriert. Fremde Parameter der Seite (z. B. `page_id`) bleiben beim Absenden des Filters erhalten.
+
+### Ausgabe je Termin
+
+Zeile: Uhrzeit (`18:30 Uhr`, `18:30–22:00 Uhr`, `ganztägig` oder leer – nie `00:00` erfunden), Titel, „Ort, Stadt“.
+Aufgeklappt: Datum (bei mehrtägigen „bis …“), Uhrzeit, Ort, Adresse, Stadt, Beschreibung, „Zur Webseite“, für
+Administratoren „Bearbeiten“ (nur manuelle Termine). Anker `#eventcrawler-event-{id}`.
+
+- **Beschreibung** nur bei manuellen Terminen (eigene Texte); Filter `eventcrawler_frontend_show_description`
+  (`$show`, `$event`) für eine spätere Freigabe gecrawlter Texte (E9).
+- **Links** nur `http`/`https` mit Host; `javascript:`, `mailto:`, `ftp:` usw. werden nicht verlinkt.
+- **Keine internen Felder:** abgefragt werden nur `id, source, title, description, start_date, start_time, end_date,
+  end_time, all_day, venue_name, venue_address, city, event_url` (`Repository::PUBLIC_COLUMNS`), nicht
+  `external_id`, `event_key`, `content_hash`, `source_url`, Zeitstempel. Keine Bilder oder Logos.
+- **Reihenfolge:** Datum, Termine ohne Uhrzeit zuerst (wie WPEM), Uhrzeit, Titel, id.
+- **Escaping:** alle Werte mit `esc_html()`/`esc_attr()`/`esc_url()`; SQL nur über `$wpdb->prepare()` im Repository.
+- **Performance:** je Ansicht eine `COUNT`-Abfrage und eine `LIMIT`-Abfrage über den Index `start_date`, die
+  Stadtliste per `DISTINCT city`; Kalender nur `id, title, start_date, start_time, all_day` des Monats. Kein Cache.
+- **Responsive:** ab 782 px Breite zweispaltige Zeile, darunter gestapelt; Kalender mobil nur Tageszahl + Anzahl.
+  Geprüft bei 1280, 768 und 375 px (Headless-Edge, Theme Twenty Twenty-Five): kein horizontales Scrollen.
+- **Theme:** Schrift und Farben vom Theme; Anpassung über `--eventcrawler-accent`, `--eventcrawler-border`,
+  `--eventcrawler-muted`.
+
+### Manuelle Termine (Admin)
+
+„Eventcrawler → Veranstaltung hinzufügen“, Details in [06-admin.md](06-admin.md) Abschnitt 12. Regeln wie beim
+Crawler; zusätzlich im Formular **Fehler statt stillem Verwerfen** (Ende nicht nach Beginn, Link ohne http/https).
+Ein Link ohne Schema (`www.example.org`) bekommt wie überall in WordPress (`esc_url_raw`) `http://` vorangestellt.
+Gecrawlte Termine sind nicht bearbeitbar (HTTP 403); Overrides für gecrawlte Termine sind bewusst nicht gebaut.
+Manuelle Termine durchlaufen **keine** Filterregeln (redaktionelle Entscheidung).
+
+### WPEM-Übernahme (Admin)
+
+„Eventcrawler → WPEM-Übernahme“ (nur sichtbar, solange `wpem_event`-Beiträge in der Datenbank stehen – auch bei
+deaktiviertem WPEM). Zeigt immer zuerst den Probelauf (Anzahl je Ergebnis, Liste der ungültigen Termine und
+Dubletten mit Grund, Link zum WPEM-Beitrag), übernimmt erst per Button. Mapping und Regeln: Abschnitt 10.
+
+### Tests (2026-10-28)
+
+| Test | Ergebnis |
+|---|---|
+| `tools/test-frontend.php`, mit aktivem und mit deaktiviertem WPEM | 117/117 |
+| alle bisherigen Suites (Export-Regeln 97, Link-Bezeichnungen 90, 9 Adapter-Suites 383) | grün, unverändert |
+| XML-Gesamtexport vor/nach (2562 Termine) | **bytegleich** (MD5 `d36fe6ee…`) |
+| Adapter-, Exporter- und Filterdateien | unverändert (MD5) |
+| HTTP: Formular/Übernahme als Gast, Abonnent, ohne/mit falschem Nonce, per GET | 400/403/403/403/405, nichts gespeichert |
+| HTTP: gecrawlten Termin bearbeiten/duplizieren/per POST überschreiben | 403 bzw. Fehler, Datensatz unverändert |
+| HTTP: Übernahme zweimal | 3 übernommen, dann 0 |
+| Paralleltest WPEM `[events_list]` ↔ `[eventcrawler_events view="day" sources="manual"]` (2 Tage) | gleiche Termine, Reihenfolge, Uhrzeiten, Ort, Adresse, Links; nur die PLZ fehlt (E6) |
+| WPEM deaktiviert | `[events_list]`/`[events_calendar]` zeigen die Eventcrawler-Ausgabe |
+
+Gefundener und behobener Fehler beim Testen: Die Dublettenprüfung schloss manuelle Termine ohne `external_id`
+aus (`NOT (… LIKE …)` mit NULL), jetzt `external_id IS NOT NULL AND …`.
+
 ## 13. Offene Entscheidungen
 
 | # | Frage | Warum relevant |
@@ -253,6 +336,7 @@ nicht zusammengeführt (A66, A84).
 | E7 | Sollen auch vergangene WPEM-Termine übernommen werden? | Standard der Übernahme: alle veröffentlichten |
 | E8 | Manuelle Termine erscheinen im XML im Eventcrawler-Zeilenformat (`Titel, Beschreibung. Info: domain`), nicht im WPEM-Format (`Titel: Beschreibung Info: https://…`). Für Katharina akzeptabel? | XML-Format wird nicht eigenmächtig geändert (A8) |
 | E9 | Beschreibungen gecrawlter Termine im öffentlichen Frontend zeigen? | Standard: nur bei manuellen Terminen (Freigabe der Fremdtexte offen) |
+| E10 | Datenqualität WPEM: 155 von 596 Septemberterminen haben die Uhrzeit nur im Titel („14.30 Uhr …“) und sind als ganztägig gespeichert. Vor oder nach der Übernahme redaktionell korrigieren? | Übernommen wird unverändert (keine Textauswertung, A66); das Frontend zeigt sie wie WPEM als „ganztägig“ |
 
 ## 14. Abschaltplan WPEM
 
@@ -266,6 +350,7 @@ WPEM bleibt aktiv, bis alle Punkte erledigt sind:
 5. Redaktion legt neue Termine nur noch im Eventcrawler an (Stichtag festlegen); WPEM nur noch lesen.
 6. E2/E3 entschieden, ggf. Redirects (Abschnitt 11) bzw. Import gebaut.
 7. WPEM deaktivieren (nicht löschen): Seiten mit `[events_list]`/`[events_calendar]` laufen über die Aliase weiter.
-   URLs prüfen, XML-Export prüfen.
+   **Danach „Einstellungen → Permalinks“ einmal speichern**, sonst liefern alte WPEM-URLs die Blog-Übersicht mit 200
+   (Abschnitt 6). URLs prüfen, XML-Export prüfen.
 8. Nach einer Beobachtungszeit: WPEM-Daten sichern, Plugin löschen (die WPEM-Posts bleiben für Redirects in der
    Datenbank, solange Redirects gebraucht werden).

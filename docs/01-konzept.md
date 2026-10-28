@@ -9,6 +9,11 @@ einen Veranstaltungskalender in Druck oder Redaktion weiterverwendet.
 Die Veranstaltungen werden **nicht als WordPress-Posts** gespeichert, sondern in einer **eigenen Datenbanktabelle**
 (`{$wpdb->prefix}eventcrawler_events`, siehe [02-datenbank.md](02-datenbank.md)).
 
+**Seit 2026-10-28** ersetzt der Eventcrawler schrittweise das Kundenplugin „WP Kulmbacher Land“ (WPEM): Er verwaltet
+auch **manuelle Termine** der Redaktion (`source = manual`), zeigt alle Termine öffentlich per Shortcode an (Liste,
+Tagesansicht, Kalender) und übernimmt den WPEM-Bestand einmalig. Die Tabelle bleibt die **einzige** Datenquelle; es
+gibt keine Synchronisation mit WPEM (siehe [10-frontend.md](10-frontend.md)).
+
 ## 2. MVP – Umfang der ersten Version
 
 Der MVP dient als **Kundendemo**. Er soll klein, verständlich und nachvollziehbar bleiben.
@@ -41,9 +46,14 @@ Quelle (Website)
   -> INSERT oder UPDATE oder nur last_seen_at aktualisieren
   -> Datenbank ({prefix}eventcrawler_events)
 
+Redaktion (Formular „Veranstaltung hinzufügen“) bzw. WPEM-Bestand (einmalige Übernahme)
+  -> Normalisierung (dieselben Regeln, Eventcrawler_Manual_Events::prepare())
+  -> Datenbank (source = manual; keine Filterregeln)
+
 Datenbank
-  -> Admin-Liste (anzeigen, filtern, löschen; Detail-Modal zeigt die gespeicherten Rohwerte, nur lesend)
+  -> Admin-Liste (anzeigen, filtern, löschen; manuelle Termine bearbeiten/duplizieren; Detail-Modal nur lesend)
   -> XML-Export (Datum -> Ort -> Veranstaltungen; sichtbarer Link = Link-Bezeichnung der Domain, sonst die Domain)
+  -> Frontend (Shortcodes [eventcrawler_events], [eventcrawler_calendar]; nur öffentliche Felder)
 ```
 
 ## 4. Hauptkomponenten
@@ -57,10 +67,13 @@ Datenbank
 | Filter | zentrale, einfache Ausschlusslogik | [05-filter.md](05-filter.md) |
 | Admin | Menüseite, Liste (`WP_List_Table`) mit read-only Detail-Modal, Buttons „Crawler starten“ / „XML exportieren“, Löschen, Unterseiten „Filterregeln“ und „Link-Bezeichnungen“ | [06-admin.md](06-admin.md) |
 | Exporter | XML im bestehenden Minimalformat erzeugen und als Download ausliefern | [07-export.md](07-export.md) |
+| Manuelle Termine | Formular, Normalisierung, Speicherung (`source = manual`) | [06-admin.md](06-admin.md), [10-frontend.md](10-frontend.md) |
+| WPEM-Übernahme | einmaliger, idempotenter Import des WP-Kulmbacher-Land-Bestands mit Probelauf | [10-frontend.md](10-frontend.md) |
+| Frontend | öffentliche Liste, Tagesansicht, Kalender per Shortcode, Aliase für die WPEM-Shortcodes | [10-frontend.md](10-frontend.md) |
 
 ### Dateistruktur des Plugins
 
-Mit ✅ markierte Dateien existieren (Stand 2026-10-15). Die übrigen sind für spätere Phasen geplant.
+Mit ✅ markierte Dateien existieren (Stand 2026-10-28). Die übrigen sind für spätere Phasen geplant.
 
 ```
 wp-plugin/                                  (Plugin-Root, in WP als wp-content/plugins/eventcrawler)
@@ -74,11 +87,17 @@ wp-plugin/                                  (Plugin-Root, in WP als wp-content/p
     class-eventcrawler-filter-rules.php  ✅ gespeicherte Filterregeln (Option eventcrawler_filter_rules)
     class-eventcrawler-domain-mappings.php ✅ Link-Bezeichnungen Domain -> Ausgabe im XML (Option eventcrawler_export_domain_mappings)
     class-eventcrawler-exporter.php      ✅ XML-Export: Gruppierung, deutsches Datum, <p>-Text (Textregeln, sichtbare URL/Link-Bezeichnung), XMLWriter, Prüfung
+    class-eventcrawler-manual-events.php ✅ manuelle Termine (source = manual): Normalisierung, Speichern (seit 2026-10-28)
+    class-eventcrawler-wpem-migration.php ✅ einmalige WPEM-Übernahme: Probelauf, Dubletten, idempotente Übernahme
+    frontend/
+      class-eventcrawler-frontend.php    ✅ Shortcodes Liste/Tagesansicht/Kalender, WPEM-Aliase (seit 2026-10-28)
     admin/
       class-eventcrawler-admin.php       ✅ Menü „Eventcrawler“, Seite, AJAX-Crawl je Quelle, AJAX-Detaildaten, Export, Löschaktionen, Notices
       class-eventcrawler-list-table.php  ✅ WP_List_Table für die Eventliste (Aktionen: Details, Löschen, Quelle ansehen)
       class-eventcrawler-filter-admin.php ✅ Untermenü „Filterregeln“
       class-eventcrawler-domain-admin.php ✅ Untermenü „Link-Bezeichnungen“
+      class-eventcrawler-event-admin.php ✅ Untermenü „Veranstaltung hinzufügen“ (anlegen, bearbeiten, duplizieren)
+      class-eventcrawler-wpem-admin.php  ✅ Untermenü „WPEM-Übernahme“ (Probelauf, Übernahme)
     sources/
       abstract-eventcrawler-source.php   ✅ Basis der Adapter (HTTP-Abruf, UTF-8-Absicherung, DOM/XPath, Textbereinigung, URLs)
       class-eventcrawler-source-burg-rabenstein.php ✅ Adapter Burg Rabenstein
@@ -96,6 +115,7 @@ wp-plugin/                                  (Plugin-Root, in WP als wp-content/p
   assets/
     eventcrawler-admin.js                ✅ Crawler-Steuerung im Browser (Quellen nacheinander, Fortschritt) und Detail-Modal der Liste
     eventcrawler-admin.css               ✅ kleines Layout-CSS für das Detail-Modal
+    eventcrawler-frontend.css            ✅ Layout der öffentlichen Liste und des Kalenders (seit 2026-10-28)
 
 tools/                                      (außerhalb des Plugins, wird nicht ausgeliefert)
   seed-testdata.php                      ✅ Entwickler-Skript: Demo-Events einfügen/entfernen (CLI)
@@ -109,6 +129,7 @@ tools/                                      (außerhalb des Plugins, wird nicht 
   test-kronach.php                       ✅ Entwickler-Tests: Parser Kronach mit eingebetteten HTML-Ausschnitten (CLI)
   test-bayreuth-tourismus.php            ✅ Entwickler-Tests: Parser Bayreuth Tourismus mit eingebetteten JSON-Antworten (CLI)
   test-concertbuero-franken.php          ✅ Entwickler-Tests: Parser Concertbüro Franken mit eingebetteten HTML-Ausschnitten (CLI)
+  test-frontend.php                      ✅ Entwickler-Tests: Frontend, manuelle Termine, WPEM-Übernahme (CLI, Rollback)
 ```
 
 - Keine Namespaces, Interfaces, Factories oder Service Container. Klassen mit dem Präfix `Eventcrawler_` genügen für
@@ -132,6 +153,7 @@ Diese Punkte werden jetzt nicht gebaut. Sie sind nur als mögliche spätere Erwe
 - komplexe Logs (MVP: nur eine Ergebnis-Zusammenfassung nach dem Crawl)
 - automatische Übersetzungen
 - REST-API
+- eigene öffentliche Detailseiten je Termin, Venue-Seiten/-Taxonomie, Kategorien, Bilder (siehe 10-frontend.md)
 - automatischer Crawl per WP-Cron (sinnvoller nächster Schritt nach dem MVP, siehe [todo.md](todo.md))
 - zusätzliche Tabellen (Quellen, Crawl-Läufe, Logs)
 
@@ -232,3 +254,11 @@ Diese Punkte werden jetzt nicht gebaut. Sie sind nur als mögliche spätere Erwe
 | A91 | 2026-10-15 | **Quelle mit Vorrang je Ort bei bekannter starker Überschneidung:** Eine source-spezifische Prioritätsregel ist zulässig, wenn sie auf einem stabilen, belegten Merkmal beruht. Konkret: **Bayreuth Tourismus übernimmt keine Termine am Ort DAS ZENTRUM** (Venue-ID `e7cac5bf-eefe-4b23-af39-d06aba69e0bd` der Regionaldatenbank, über den API-Ortsfilter), weil DAS ZENTRUM als Primärquelle separat angebunden ist. Ausdrücklich **keine** unscharfe Deduplizierung, keine globale Event-ID, keine Datenfusion zwischen Quellen, keine semantische Erkennung; andere Orte werden nicht ausgeschlossen. Ausschlüsse zählen nicht als „gefunden“ (keine eigene Ergebniskategorie, keine Core-Änderung) | Ohne Regel stünden ca. 40 Termine je Jahr doppelt im XML, meist mit anderem Titel (A66 verbietet unscharfen Abgleich). DAS ZENTRUM ist Betreiber des Hauses, hat mehr Termine, vollständigere Titel und eine Termin-ID. Die Venue-ID ist eindeutig (genau ein Ort in 633) und deckt sich mit dem exakten Ortsnamen (15/15) |
 | A92 | 2026-10-15 | **TLS: Maßstab ist WordPress selbst.** Eine Quelle wird nur angebunden, wenn `wp_remote_get()` mit `sslverify=true` und dem CA-Bundle von WordPress verbindet. Scheitert die Verifikation, wird die Quelle zurückgestellt – kein `sslverify=false`, kein `CURLOPT_SSL_VERIFYPEER`, kein eigenes CA-Zertifikat im Plugin (Thurnau, 2026-10-15: Root „ISRG Root YR“ fehlt im Bundle) | Eine abgeschaltete Prüfung würde Daten ungeprüfter Herkunft speichern; eigenes CA-Handling wäre eine Sicherheitsentscheidung des Betreibers. Git-curl ist kein Maßstab (bei Bayreuth Tourismus falsch negativ) |
 | A93 | 2026-10-15 | **Concertbüro Franken ist eine ausdrücklich geografisch eingeschränkte Quelle:** gespeichert werden nur Termine, deren strukturierter Veranstaltungsort („Stadt • Ort“, deckungsgleich mit JSON-LD `addressLocality`) exakt **Nürnberg** oder **Fürth** ergibt; alle anderen Städte schließt der Adapter aus. Ausdrücklich **keine** Entfernung, keine Region/Metropolregion, keine PLZ-Nähe, keine Ortsteil- oder Präfixformen, kein unscharfer Abgleich, kein KI-Ortsverständnis; nur technische Normalisierung (Trim, Entities, Whitespace, Groß/Klein). Ohne Stadt → fehlerhaft, nie Nürnberg. Zentrale Ortsregel `get_allowed_cities()` als zweite Sicherung | Kundenvorgabe. Die Quelle führt Konzerte in 17 Städten (404 Termine, 80 außerhalb). Die zentrale Ortsregel allein ließe Präfixformen zu („Fürth am Berg“ wäre ein anderer Ort); deshalb entscheidet der Adapter exakt. Geo-Ausschlüsse sind kein Inhaltsfilter und zählen nicht als „gefunden“ |
+| A94 | 2026-10-28 | **Der Eventcrawler ersetzt WP Kulmbacher Land (WPEM) schrittweise; `{prefix}eventcrawler_events` ist die einzige Event-Datenquelle für Admin, XML und Frontend.** Keine Synchronisation Eventcrawler → WPEM, keine Kopie in `wp_posts`/`wp_postmeta` | Doppelte Datenhaltung führt zu Abweichungen; WPEM soll abgeschaltet werden können (10-frontend.md) |
+| A95 | 2026-10-28 | **Manuelle Termine sind Zeilen derselben Tabelle mit `source = 'manual'`** (Anzeigename „Manuell“), keine Schemaänderung. Normalisierung über `Eventcrawler_Manual_Events::prepare()` mit den Regeln des Crawlers (NULL statt Ersatzwerten, nie 00:00, Endzeit ohne Enddatum = gleicher Tag); im Formular sind ungültiges Ende und Nicht-http(s)-Links Fehler, bei der Übernahme werden sie wie beim Crawler verworfen und gemeldet. `source_url = NULL`. Keine Filterregeln | Die Kundendaten (596 Termine im September 2026, rund 60 Orte) sind redaktionell und werden weiter gebraucht; gleiche Regeln → gleicher Export und gleiches Frontend |
+| A96 | 2026-10-28 | Nur manuelle Termine sind im Admin bearbeitbar; gecrawlte bleiben Eigentum des Crawlers (kein Override-Konzept in dieser Phase) | Ein Crawl würde Änderungen sonst überschreiben bzw. bräuchte gesperrte Felder (nicht MVP) |
+| A97 | 2026-10-28 | **WPEM-Übernahme einmalig und idempotent:** nur veröffentlichte `wpem_event`, `external_id = wpem-{ID}`, lesender direkter `$wpdb`-Zugriff (funktioniert auch bei deaktiviertem WPEM), Probelauf vor der Übernahme. Dubletten zu vorhandenen Terminen nur exakt: gleiches Datum + gleiche URL (Schema/Host klein, ohne Fragment) oder gleiches Datum + Titel + Stadt (klein, Leerzeichen normalisiert). Stadt = `wpem_venue_city`, sonst Ortsname (wie das `<h2>` des WPEM-Exports); ohne Ort → nicht übernommen | Kein Datenverlust, kein doppelter Lauf, keine unscharfen Zusammenführungen (A66, A84) |
+| A98 | 2026-10-28 | **Frontend per Shortcode ohne JavaScript:** `[eventcrawler_events]` (Liste ab Datum oder Tagesansicht), `[eventcrawler_calendar]`; Details per `<details>`, Navigation per GET (`date` wie WPEM, `ec_*`), serverseitige Pagination, keine AJAX-Endpunkte für Besucher, keine Nonces nötig | Funktional wie WPEM (Tagesnavigation, Accordion, Kalender, Suche, „Mehr laden“) bei kleinster Angriffsfläche; WPEM-Frontend-JS fehlt ohnehin im Referenzordner |
+| A99 | 2026-10-28 | Alias-Shortcodes `[events_list]`/`[events_calendar]` werden nur registriert, wenn WPEM sie nicht selbst registriert | Bestehende Kundenseiten laufen nach dem Deaktivieren ohne Bearbeitung weiter; solange WPEM aktiv ist, bleibt seine Ausgabe unverändert (Paralleltest) |
+| A100 | 2026-10-28 | Öffentlich nur `PUBLIC_COLUMNS` (ohne `external_id`, `event_key`, `content_hash`, `source_url`, Zeitstempel); Beschreibung nur bei manuellen Terminen (Filter `eventcrawler_frontend_show_description`); Links nur http/https; keine Bilder | Freigabe der Fremdtexte ist offen; keine internen Daten nach außen |
+| A101 | 2026-10-28 | Keine eigene Detail-URL je Termin; alte WPEM-URLs werden erst beim Abschalten (Phase F) per 301 umgeleitet, falls nötig (E2) | WPEM-Detailseiten zeigen weder Datum noch Ort; indexierbare Seiten mit Fremdtexten wären rechtlich ungeklärt |

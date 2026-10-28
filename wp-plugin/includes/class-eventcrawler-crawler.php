@@ -67,7 +67,8 @@ class Eventcrawler_Crawler {
 	public static function get_source_name( $slug ) {
 		static $names = null;
 		if ( null === $names ) {
-			$names = array();
+			// Manuelle Termine sind keine Quelle des Registers (kein Adapter, werden nie gecrawlt).
+			$names = array( Eventcrawler_Manual_Events::SOURCE => Eventcrawler_Manual_Events::NAME );
 			foreach ( self::get_sources() as $source_slug => $source ) {
 				$names[ $source_slug ] = $source->get_name();
 			}
@@ -232,7 +233,7 @@ class Eventcrawler_Crawler {
 	 * @param mixed $value Datum Y-m-d, leer oder null.
 	 * @return string|null|false Y-m-d, null (nicht vorhanden) oder false (ungültig).
 	 */
-	private static function normalize_date( $value ) {
+	public static function normalize_date( $value ) {
 		if ( null === $value || '' === $value ) {
 			return null;
 		}
@@ -244,7 +245,7 @@ class Eventcrawler_Crawler {
 	 * @param mixed $value Uhrzeit H:i oder H:i:s, leer oder null.
 	 * @return string|null|false HH:MM:00, null (nicht vorhanden) oder false (ungültig). Nie künstlich 00:00:00.
 	 */
-	private static function normalize_time( $value ) {
+	public static function normalize_time( $value ) {
 		if ( null === $value || '' === $value ) {
 			return null;
 		}

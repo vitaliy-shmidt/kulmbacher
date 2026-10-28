@@ -54,6 +54,8 @@ class Eventcrawler_Admin {
 		add_action( 'admin_post_eventcrawler_export', array( __CLASS__, 'handle_export' ) );
 		Eventcrawler_Filter_Admin::init();
 		Eventcrawler_Domain_Admin::init();
+		Eventcrawler_Event_Admin::init();
+		Eventcrawler_Wpem_Admin::init();
 	}
 
 	/**
@@ -67,6 +69,16 @@ class Eventcrawler_Admin {
 			$options[ $slug ] = $source->get_name();
 		}
 		return $options;
+	}
+
+	/**
+	 * Quellen für Listen- und Exportfilter: das Register plus "Manuell" (manuelle Termine werden nie gecrawlt,
+	 * erscheinen deshalb nicht im Crawler-Dropdown).
+	 *
+	 * @return string[]
+	 */
+	public static function filter_source_options() {
+		return self::source_options() + array( Eventcrawler_Manual_Events::SOURCE => Eventcrawler_Manual_Events::NAME );
 	}
 
 	/**
@@ -94,7 +106,7 @@ class Eventcrawler_Admin {
 
 		$source = $raw( 'source' );
 		if ( '' !== $source ) {
-			if ( isset( self::source_options()[ $source ] ) ) {
+			if ( isset( self::filter_source_options()[ $source ] ) ) {
 				$filters['source'] = $source;
 			} else {
 				$errors[] = 'Unbekannte Quelle.';
@@ -341,10 +353,11 @@ class Eventcrawler_Admin {
 	 * Speichert Meldungen für die Listenseite und leitet dorthin um.
 	 *
 	 * @param array[] $notices Liste aus array( 'type' => success|warning|error, 'message' => string ).
+	 * @param array   $args    Zusätzliche Listenparameter (z. B. source => manual).
 	 */
-	private static function redirect_with_notices( array $notices ) {
+	public static function redirect_with_notices( array $notices, array $args = array() ) {
 		set_transient( self::notice_key(), $notices, 5 * MINUTE_IN_SECONDS );
-		wp_safe_redirect( add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'admin.php' ) ) );
+		wp_safe_redirect( add_query_arg( array_merge( array( 'page' => self::PAGE_SLUG ), array_map( 'rawurlencode', $args ) ), admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -369,10 +382,13 @@ class Eventcrawler_Admin {
 
 		add_action( 'load-' . $hook, array( __CLASS__, 'load_page' ) );
 
-		// Untermenü: erster Eintrag = dieselbe Seite mit eigenem Namen, danach "Filterregeln" und "Link-Bezeichnungen".
+		// Untermenü: erster Eintrag = dieselbe Seite mit eigenem Namen, danach manuelle Termine, "Filterregeln",
+		// "Link-Bezeichnungen" und – nur solange WPEM-Daten existieren – die WPEM-Übernahme.
 		add_submenu_page( self::PAGE_SLUG, 'Importierte Veranstaltungen', 'Importierte Veranstaltungen', self::CAPABILITY, self::PAGE_SLUG, array( __CLASS__, 'render_page' ) );
+		Eventcrawler_Event_Admin::register_menu();
 		Eventcrawler_Filter_Admin::register_menu();
 		Eventcrawler_Domain_Admin::register_menu();
+		Eventcrawler_Wpem_Admin::register_menu();
 	}
 
 	/**
@@ -438,8 +454,9 @@ class Eventcrawler_Admin {
 
 		self::$list_table->prepare_items();
 
-		$sources = self::source_options();
-		$years   = ( new Eventcrawler_Repository() )->get_available_years();
+		$sources        = self::source_options();
+		$filter_sources = self::filter_source_options();
+		$years          = ( new Eventcrawler_Repository() )->get_available_years();
 		$f       = self::$list_filters;
 		if ( $f['year'] && ! in_array( $f['year'], $years, true ) ) {
 			$years[] = $f['year']; // gewähltes Jahr ohne Daten trotzdem anzeigen
@@ -449,6 +466,7 @@ class Eventcrawler_Admin {
 		?>
 		<div class="wrap">
 			<h1 class="wp-heading-inline">Importierte Veranstaltungen</h1>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Eventcrawler_Manual_Events::PAGE_SLUG ) ); ?>" class="page-title-action">Veranstaltung hinzufügen</a>
 			<hr class="wp-header-end">
 
 			<?php self::render_notices(); ?>
@@ -475,7 +493,7 @@ class Eventcrawler_Admin {
 				<?php wp_nonce_field( 'eventcrawler_export', 'eventcrawler_export_nonce' ); ?>
 				<p>
 					<strong>XML-Export:</strong>
-					<?php self::render_period_fields( 'eventcrawler-export', self::EXPORT_FIELDS, $sources, $years, array() ); ?>
+					<?php self::render_period_fields( 'eventcrawler-export', self::EXPORT_FIELDS, $filter_sources, $years, array() ); ?>
 					<button type="submit" class="button">XML exportieren</button>
 				</p>
 			</form>
@@ -484,7 +502,7 @@ class Eventcrawler_Admin {
 				<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE_SLUG ); ?>">
 				<p>
 					<strong>Liste filtern:</strong>
-					<?php self::render_period_fields( 'eventcrawler-filter', self::LIST_FIELDS, $sources, $years, $f ); ?>
+					<?php self::render_period_fields( 'eventcrawler-filter', self::LIST_FIELDS, $filter_sources, $years, $f ); ?>
 					<label for="eventcrawler-filter-search">Suche</label>
 					<input type="search" name="s" id="eventcrawler-filter-search" value="<?php echo esc_attr( $f['search'] ); ?>">
 					<button type="submit" class="button">Filtern</button>

@@ -18,9 +18,9 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | Regeln für KI-Assistenten | `C:\xampp\htdocs\kulmbacher\AGENTS.md` (+ `CLAUDE.md` verweist darauf) |
 | XML-Referenzdatei | `docs/referenz/veranstaltungen-export-2026-09-30.xml` – **liegt noch nicht vor** (siehe [07-export.md](07-export.md)) |
 | Entwickler-Werkzeuge (nicht Teil des Plugins) | `C:\xampp\htdocs\kulmbacher\tools` |
-| Kundenplugin „WP Kulmbacher Land“ (nur Referenz, nicht ändern) | `C:\xampp\htdocs\kulmbacher\wp-events-manager`, siehe [09-wpem-integration.md](09-wpem-integration.md) |
+| Kundenplugin „WP Kulmbacher Land“ (nur Referenz, nicht ändern) | `C:\xampp\htdocs\kulmbacher\wp-events-manager`, siehe [09-wpem-integration.md](09-wpem-integration.md) und [10-frontend.md](10-frontend.md) |
 
-## Aktueller Entwicklungsstand (Stand: 2026-10-15)
+## Aktueller Entwicklungsstand (Stand: 2026-10-28)
 
 - **Phase 1 – Dokumentation:** erledigt.
 - **Phase 2 – Plugin-Grundgerüst:** erledigt und in einer WordPress-Testinstallation getestet:
@@ -167,6 +167,17 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   - Matching über den Alias der Detailseite; „Alle Quellen“ mit 11 Quellen ~372 s
   - Tests: `tools/test-concertbuero-franken.php` (35 Tests)
 - **Ursprüngliche Quellenliste vollständig technisch geprüft:** 15 Quellen – 11 aktiv, 4 zurückgestellt, 0 ungeprüft.
+- **WPEM-Ersatz (2026-10-28):** erledigt und getestet (siehe [10-frontend.md](10-frontend.md)):
+  - Kundenplugin „WP Kulmbacher Land“ vollständig analysiert (Inventar, Datenmodell, Shortcodes, URLs/SEO); Datenlage
+    aus der echten Exportdatei: 596 redaktionelle Termine im September 2026 → manuelle Termine werden weiter gebraucht
+  - Manuelle Termine im Eventcrawler (`source = manual`): anlegen, bearbeiten, duplizieren, löschen; gleiche Regeln,
+    gleicher Export, keine Schemaänderung
+  - Öffentliches Frontend ohne JavaScript: `[eventcrawler_events]` (Liste/Tagesansicht, Suche, Stadt, Datum,
+    Pagination, aufklappbare Details), `[eventcrawler_calendar]`; Aliase `[events_list]`/`[events_calendar]`, sobald WPEM
+    inaktiv ist
+  - Einmalige, idempotente WPEM-Übernahme mit Probelauf und exakter Dublettenprüfung
+  - XML-Export bytegleich, alle 11 Quellen unverändert; Tests: `tools/test-frontend.php` (117 Tests)
+  - **WPEM noch nicht deaktivieren** – offene Punkte und Abschaltplan in 10-frontend.md Abschnitte 13/14
 - **Noch nicht implementiert:**
   - Export nach frei wählbarem Datumsbereich, Stadt oder Checkbox-Auswahl
   - Listenfilter nach Stadt (derzeit über die Suche)
@@ -188,16 +199,18 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 |---|---|
 | Plugin-Name / Slug | Eventcrawler / `eventcrawler` |
 | Hauptdatei | `wp-plugin/eventcrawler.php` (in WordPress: `wp-content/plugins/eventcrawler/eventcrawler.php`) |
-| Version | 0.1.0, Schema-Version 3 (`EVENTCRAWLER_DB_VERSION`) |
+| Version | 0.2.0, Schema-Version 3 (`EVENTCRAWLER_DB_VERSION`) |
 | Tabelle | `{$wpdb->prefix}eventcrawler_events` |
 | Optionen | `eventcrawler_db_version`, `eventcrawler_filter_rules` (Filterregeln, 05-filter.md), `eventcrawler_filter_rules_version` (Stand der Default-Regeln), `eventcrawler_export_domain_mappings` (Link-Bezeichnungen, 07-export.md Abschnitt 13) |
 | Capability | `manage_options` |
 | Admin-Menü / Seitentitel | „Eventcrawler“ / „Importierte Veranstaltungen“ |
-| Admin-Seiten | `wp-admin/admin.php?page=eventcrawler` (Importierte Veranstaltungen, mit Detail-Modal), `wp-admin/admin.php?page=eventcrawler-filter` (Filterregeln), `wp-admin/admin.php?page=eventcrawler-domains` (Link-Bezeichnungen) |
+| Admin-Seiten | `wp-admin/admin.php?page=eventcrawler` (Importierte Veranstaltungen, mit Detail-Modal), `wp-admin/admin.php?page=eventcrawler-filter` (Filterregeln), `wp-admin/admin.php?page=eventcrawler-domains` (Link-Bezeichnungen), `wp-admin/admin.php?page=eventcrawler-event` (Veranstaltung hinzufügen/bearbeiten), `wp-admin/admin.php?page=eventcrawler-wpem` (WPEM-Übernahme, nur mit WPEM-Daten) |
+| Shortcodes | `[eventcrawler_events]`, `[eventcrawler_calendar]`; Aliase `[events_list]`, `[events_calendar]` nur ohne aktives WPEM (10-frontend.md) |
+| admin-post-Aktionen | `eventcrawler_export`, `eventcrawler_save_event`, `eventcrawler_wpem_migrate` |
 | AJAX-Aktionen | `eventcrawler_crawl_source` (eine Quelle crawlen), `eventcrawler_get_event_details` (gespeicherte Werte eines Events, nur lesend) |
 | Quellen (Slug) | `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach`, `bayreuth-tourismus`, `concertbuero-franken` |
-| Hooks | `eventcrawler_sources` (Adapter registrieren), `eventcrawler_filter_rules` (aktive Filterregeln zur Laufzeit; ersetzt `eventcrawler_exclude_terms`), `eventcrawler_export_display_url` (sichtbare URL im XML nach Link-Bezeichnung, 07-export.md 10.2/13) |
-| Anforderungen | WordPress ≥ 6.0, PHP ≥ 7.4 (getestet mit WordPress 7.1.2, PHP 8.3.12, MariaDB 10.4.32) |
+| Hooks | `eventcrawler_sources` (Adapter registrieren), `eventcrawler_filter_rules` (aktive Filterregeln zur Laufzeit; ersetzt `eventcrawler_exclude_terms`), `eventcrawler_export_display_url` (sichtbare URL im XML nach Link-Bezeichnung, 07-export.md 10.2/13), `eventcrawler_frontend_show_description` (Beschreibung im Frontend, Standard nur manuelle Termine) |
+| Anforderungen | WordPress ≥ 6.0, PHP ≥ 7.4 (getestet mit WordPress 7.1.2 und 7.1.4, PHP 8.3.12, MariaDB 10.4.32) |
 
 ## Lokale Umgebung und Test
 
@@ -260,6 +273,11 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 - Parsertests Concertbüro Franken (eingebettete HTML-Ausschnitte, keine HTTP-Abrufe, keine DB-Änderung):
   ```
   C:\xampp\php\php.exe tools\test-concertbuero-franken.php <pfad\zu\wp-load.php>
+  ```
+- Tests Frontend, manuelle Termine und WPEM-Übernahme (alle Änderungen in einer Transaktion mit Rollback, Prüfsumme
+  der Tabelle vorher/nachher; legt bei Bedarf CPT/Taxonomie von WPEM nur im Testprozess an):
+  ```
+  C:\xampp\php\php.exe tools\test-frontend.php <pfad\zu\wp-load.php>
   ```
 
 ## Dokumente

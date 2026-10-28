@@ -845,3 +845,15 @@ CLAWFINGER und NAPALM DEATH werden als identische Zeilen zusammengefasst), 210 `
 `<h2>Nürnberg</h2>` (210) und `<h2>Fürth</h2>` (1). Ohne Beschreibung und Adresse, z. B. „20:00 Uhr THE KILKENNYS,
 Hirsch. Info: www.concertbuero-franken.de“. Link-Bezeichnung getestet (`www.concertbuero-franken.de` → „Concertbüro
 Franken“, 322 ×), danach gelöscht, Export wieder bytegleich.
+
+## 22. Manuelle Termine im Export (2026-10-28)
+
+Seit dem WPEM-Ersatz (10-frontend.md) stehen auch manuell gepflegte Termine (`source = manual`) in der Tabelle. Der
+Export behandelt sie **genau wie gecrawlte**: gleiche Gruppierung, Sortierung und Zeilenregeln (Abschnitte 6 und 12),
+**Format unverändert**. Der Exportfilter „Quelle“ bietet zusätzlich „Manuell“.
+
+- `source_url` ist bei manuellen Terminen immer `NULL`, damit „Info:“ nur aus dem Webseiten-Link (`event_url`) entsteht.
+- Übernommene WPEM-Termine erscheinen im Eventcrawler-Zeilenformat (`Titel, Beschreibung, Ort. Info: domain`), nicht
+  mehr im WPEM-Format (`Titel: Beschreibung Info: https://…`). Ob das für Katharina passt, ist offen (10-frontend.md E8).
+- Regression 2026-10-28: Gesamtexport aller 2562 Termine vor/nach der Änderung **bytegleich**; Export mit Filter
+  „Manuell“ getestet (`tools/test-frontend.php`).

@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       Eventcrawler
- * Description:       Crawlt Veranstaltungen externer Websites in eine eigene Tabelle und exportiert sie als XML (MVP).
- * Version:           0.1.0
+ * Description:       Crawlt Veranstaltungen externer Websites in eine eigene Tabelle, verwaltet manuelle Termine, zeigt sie per Shortcode an und exportiert sie als XML.
+ * Version:           0.2.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Text Domain:       eventcrawler
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'EVENTCRAWLER_VERSION', '0.1.0' );
+define( 'EVENTCRAWLER_VERSION', '0.2.0' );
 define( 'EVENTCRAWLER_DB_VERSION', '3' );
 define( 'EVENTCRAWLER_PATH', plugin_dir_path( __FILE__ ) );
 
@@ -23,6 +23,9 @@ require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-filter-rules.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-crawler.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-domain-mappings.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-exporter.php';
+require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-manual-events.php';
+require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-wpem-migration.php';
+require_once EVENTCRAWLER_PATH . 'includes/frontend/class-eventcrawler-frontend.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/abstract-eventcrawler-source.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-burg-rabenstein.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-bad-steben.php';
@@ -44,9 +47,14 @@ add_action( 'plugins_loaded', array( 'Eventcrawler_Installer', 'maybe_upgrade' )
 // Filterregeln einmalig mit den Code-Defaults anlegen, falls die Option noch nicht existiert (auch ohne Reaktivierung).
 add_action( 'plugins_loaded', array( 'Eventcrawler_Filter_Rules', 'maybe_initialize' ) );
 
+// Öffentliche Shortcodes (Liste, Kalender, WPEM-Aliase), docs/10-frontend.md.
+Eventcrawler_Frontend::init();
+
 if ( is_admin() ) {
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-filter-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-domain-admin.php';
+	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-event-admin.php';
+	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-wpem-admin.php';
 	Eventcrawler_Admin::init();
 }
