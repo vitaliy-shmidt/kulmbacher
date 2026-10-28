@@ -275,6 +275,7 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | [07-export.md](07-export.md) | XML-Exportformat (verbindlich) |
 | [08-kompatibilitaet.md](08-kompatibilitaet.md) | Fachliches Mapping zum vorhandenen manuellen Veranstaltungs-Plugin (keine technische Integration) |
 | [09-wpem-integration.md](09-wpem-integration.md) | Kundenplugin „WP Kulmbacher Land“: XML-Export/-Import im Vergleich, Import-Kompatibilität unseres XML |
+| [10-frontend.md](10-frontend.md) | WPEM-Ersatz: Analyse des Kundenplugins, Funktionsmatrix, Frontend, manuelle Termine, Übernahme, URL-Strategie, Abschaltplan |
 | [todo.md](todo.md) | Priorisierte Aufgabenliste / Phasenplan |
 
 ## Wie die Dokumentation verwendet wird
