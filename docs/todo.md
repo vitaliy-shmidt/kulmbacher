@@ -270,6 +270,12 @@ Details, Funktionsmatrix, Entscheidungen E1–E10 und Abschaltplan: [10-frontend
 - [ ] **Redaktion:** Link-Bezeichnung `www.das-zentrum.de` → z. B. „DAS ZENTRUM Bayreuth“ anlegen?
 - [x] Strategie gegen Doppelungen mit Bayreuth Tourismus: Ort DAS ZENTRUM dort nicht übernehmen (A91, 2026-10-15)
 - [x] TLS `api.region-bayreuth.de` mit `wp_remote_get()` geprüft: verifiziert (2026-10-15)
+- [x] **Kundenmeldung „liefert keine Ergebnisse“ (2026-10-29):** einmaliger Abbruch beim Verbindungsaufbau
+      (cURL 28 nach 10 s = `connect_timeout` von Requests); nicht reproduzierbar (14/14 Abrufe ~1,1 s), API unverändert
+      (69 Termine, 2 Seiten, Ort-ID 60 weiter ohne Stadt). Reparatur A102: genau ein Retry nur bei Zeitüberschreitung;
+      65 Tests, 3 Einzelcrawls, „Alle Quellen“ 11/11 → 04-quellen.md Abschnitt 5 „Zuverlässigkeit“, 03-crawler.md Abschnitt 24
+- [ ] Beobachten: Tritt die Zeitüberschreitung trotz Retry erneut auf (Debug-Log „Versuch 2/2“), Erreichbarkeit beim
+      Betreiber klären; Bayreuth Tourismus erst nach ausdrücklicher Entscheidung als Ersatz (A91)
 
 ## Sechste aktive Quelle: Schützenhaus Münchberg (2026-10-15)
 

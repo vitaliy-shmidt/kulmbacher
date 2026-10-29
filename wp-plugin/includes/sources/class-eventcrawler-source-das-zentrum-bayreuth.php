@@ -26,6 +26,11 @@ class Eventcrawler_Source_Das_Zentrum_Bayreuth extends Eventcrawler_Source {
 	const MAX_PAGES = 10; // Schutz gegen Endlosschleifen (2026-10-15: 2 Seiten).
 	const TIMEZONE  = 'Europe/Berlin';
 
+	// Bei Zeitüberschreitung (cURL 28, z. B. "Connection timed out after 10004 milliseconds") genau ein weiterer
+	// Versuch nach kurzer Pause; sonst kein Retry. Gemessen 2026-10-29: Antwort ~1,1 s, Verbindungsaufbau ~15 ms
+	// (docs/04-quellen.md Abschnitt 5 "Zuverlässigkeit").
+	const RETRY_PAUSE = 2;
+
 	// Der Ort "DAS ZENTRUM – Kleinkunstbühne" (Ort-ID 60) hat in der Quelle keine Adresse. Er ist ein Raum des Hauses
 	// in Bayreuth (belegt in docs/04-quellen.md Abschnitt 5). Nur für genau diese Ort-ID wird die Stadt gesetzt,
 	// eine Straße wird nicht ergänzt.
@@ -57,7 +62,7 @@ class Eventcrawler_Source_Das_Zentrum_Bayreuth extends Eventcrawler_Source {
 			if ( $page > 1 ) {
 				sleep( 1 ); // Höflich: kurze Pause zwischen den Seiten.
 			}
-			$body = $this->fetch_html( self::API_URL . '?per_page=' . self::PER_PAGE . '&page=' . $page );
+			$body = $this->fetch_with_retry( self::API_URL . '?per_page=' . self::PER_PAGE . '&page=' . $page );
 			if ( is_wp_error( $body ) ) {
 				return $body; // Unvollständige Daten nicht verarbeiten.
 			}
@@ -70,6 +75,52 @@ class Eventcrawler_Source_Das_Zentrum_Bayreuth extends Eventcrawler_Source {
 		}
 
 		return $this->parse( $pages );
+	}
+
+	/**
+	 * fetch_html() mit genau einem Wiederholungsversuch, aber nur bei Zeitüberschreitung. HTTP-Status (403, 404, 500),
+	 * leere Antworten und andere Netzwerkfehler werden nicht wiederholt.
+	 *
+	 * @param string $url URL einer API-Seite.
+	 * @return string|WP_Error
+	 */
+	private function fetch_with_retry( $url ) {
+		$body = $this->fetch_html( $url );
+		if ( ! is_wp_error( $body ) || ! self::is_timeout( $body ) ) {
+			return $body;
+		}
+
+		$this->log( 'Zeitüberschreitung bei Versuch 1/2 (' . $url . '): ' . $body->get_error_message() . ' – neuer Versuch in ' . self::RETRY_PAUSE . ' s.' );
+		sleep( self::RETRY_PAUSE );
+
+		$body = $this->fetch_html( $url );
+		if ( is_wp_error( $body ) ) {
+			$this->log( 'Fehler bei Versuch 2/2 (' . $url . '): ' . $body->get_error_message() );
+			if ( self::is_timeout( $body ) ) {
+				return new WP_Error( $body->get_error_code(), 'Zeitüberschreitung auch beim zweiten Versuch. ' . $body->get_error_message() );
+			}
+		}
+		return $body;
+	}
+
+	/**
+	 * @param WP_Error $error Fehler aus fetch_html().
+	 * @return bool True bei cURL-Fehler 28 bzw. "timed out".
+	 */
+	private static function is_timeout( WP_Error $error ) {
+		return 'eventcrawler_http' === $error->get_error_code()
+			&& 1 === preg_match( '/cURL error 28|timed out/i', $error->get_error_message() );
+	}
+
+	/**
+	 * Technisches Protokoll wie im Crawler, nur mit WP_DEBUG.
+	 *
+	 * @param string $message Meldung.
+	 */
+	private function log( $message ) {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( '[eventcrawler][' . $this->get_slug() . '] ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 	}
 
 	/**

@@ -644,10 +644,10 @@ Getestet mit veränderten Kopien der echten Seiten (nur Theater Selb gecrawlt, M
 | **Crawl-URL** | **https://www.das-zentrum.de/wp-json/tribe/events/v1/events?per_page=50&page={n}** (öffentliche REST-API des Kalender-Plugins) |
 | Status | **funktioniert** (live getestet am 2026-10-15) |
 | Parser vorhanden | **ja**: `Eventcrawler_Source_Das_Zentrum_Bayreuth` (JSON, kein HTML) |
-| Abrufmethode | `wp_remote_get` auf die API, seitenweise (`per_page=50`, 1 s Pause zwischen Seiten, max. 10 Seiten). Am 2026-10-15: **2 Requests**, live **3,3–3,4 s** |
+| Abrufmethode | `wp_remote_get` auf die API, seitenweise (`per_page=50`, 1 s Pause zwischen Seiten, max. 10 Seiten). Am 2026-10-15: **2 Requests**, live **3,3–3,4 s**; am 2026-10-29: 2 Requests, 3,5–3,6 s. **Bei Zeitüberschreitung genau ein weiterer Versuch** je Seite nach 2 s (seit 2026-10-29, siehe „Zuverlässigkeit“) |
 | Matching-Methode | **Priorität 1: `external_id` = TEC-Post-ID** des Termins (z. B. `185`) |
-| Letzter technischer Test | 2026-10-15: 73 Termine live, 73 neu; zweiter Crawl 73 unverändert |
-| Plattform | **WordPress 7.1.3** (Theme Impreza, WPBakery) mit dem Kalender-Plugin **The Events Calendar** (TEC). Die API kündigt sich selbst an (HTTP-Header `x-tec-api-root`, `<meta name="tec-api-version" content="v1">`) |
+| Letzter technischer Test | 2026-10-29: 69 Termine live (4 neu, 1 aktualisiert, 64 unverändert); zwei weitere Läufe je 69 unverändert |
+| Plattform | **WordPress 7.1.3** (2026-10-15; am 2026-10-29 **7.1.4**, laut `ver=` im HTML) (Theme Impreza, WPBakery) mit dem Kalender-Plugin **The Events Calendar** (TEC). Die API kündigt sich selbst an (HTTP-Header `x-tec-api-root`, `<meta name="tec-api-version" content="v1">`) |
 | Detailseite vorhanden | ja, je Termin `https://www.das-zentrum.de/veranstaltung/{slug}/`; wird **nicht** abgerufen |
 | externe ID | **ja, je Termin**: TEC-Post-ID (`id`, z. B. 185) |
 
@@ -760,6 +760,76 @@ Getestet mit einer veränderten Kopie der API-Seite 1 (nur DAS ZENTRUM gecrawlt,
   („Antwort der Veranstaltungs-API nicht lesbar“), die Daten bleiben unverändert (getestet). Ein Fehler auf Seite 2 bricht
   die ganze Quelle ab (keine Teildaten).
 - Etwa 40 der 73 Termine stehen auch bei Bayreuth Tourismus (siehe „DAS ZENTRUM vs. Bayreuth Tourismus“).
+- Ein einzelner Wiederholungsversuch fängt nur kurze Störungen beim Verbindungsaufbau ab. Ist der Server länger nicht
+  erreichbar, schlägt die Quelle weiterhin fehl (Daten unverändert).
+
+### Zuverlässigkeit: Meldung „liefert keine Ergebnisse“ (2026-10-29)
+
+**Anlass:** In einem Live-Lauf schlug die Quelle einmal fehl mit „cURL error 28: Connection timed out after 10004
+milliseconds“; die übrigen Quellen liefen weiter, vorhandene Termine blieben unverändert (wie vorgesehen). Der Kunde
+meldete danach „DAS ZENTRUM liefert keine Ergebnisse“.
+
+**Diagnose** mit `wp_remote_get()` (Argumente wie `fetch_html()`: Plugin-User-Agent, `sslverify` Standard = true,
+Timeout 20 s, 3 Redirects), Zeiten aus `curl_getinfo()` (Requests-Hook `curl.after_request`), WordPress 7.1.4,
+PHP 8.3.12:
+
+| Test | Ergebnis | Dauer |
+|---|---|---|
+| Website `https://www.das-zentrum.de/` | HTTP 200, 413 515 B, 0 Redirects | 1,25 s |
+| REST-Root `/wp-json/` | HTTP 200, 449 326 B; Namespace `tribe/events/v1` vorhanden | 1,05 s |
+| Tribe-Endpunkt ohne Parameter | HTTP 200, 50 634 B, `x-tec-total` 69, 7 Seiten (Standard 10 je Seite) | 1,03 s |
+| produktive URL `?per_page=50&page=1` | HTTP 200, 268 107 B, `x-tec-total` 69, `x-tec-totalpages` 2 | 1,13 s |
+| 5 × Seite 1 + 5 × Seite 2 (2 s Pause) | 10 × HTTP 200, 0 Fehler | 1,05–1,24 s |
+| Teilzeiten (alle 14 Abrufe) | DNS 1–8 ms, TCP-Verbindung 10–18 ms, erstes Byte 1,03–1,22 s; nur IPv4 (91.233.84.81); TLS (curl-CLI, 3 ×) 50–173 ms | – |
+
+**Ursache:** Der Fehler war **nicht reproduzierbar** (0 von 14 Abrufen). API, Endpunkt, Parameter, Pagination, Schema
+und Zeitraum sind unverändert (siehe unten); die Antwortzeit liegt bei ~1,1 s. Die Meldung „Connection timed out after
+10004 milliseconds“ betrifft den **Verbindungsaufbau**, nicht die Antwortzeit: `wp_remote_get()` reicht nur `timeout`
+(bei uns 20 s, `HTTP_TIMEOUT`) an die Requests-Bibliothek durch; für den Verbindungsaufbau gilt deren fester Standard
+`connect_timeout` = **10 s**. Kam binnen 10 s keine TCP-Verbindung zustande (normal: ~15 ms), war das eine kurzzeitige
+Störung zwischen Server und Netz. Ob sie beim Server oder auf der Strecke lag, lässt sich im Nachhinein nicht belegen.
+Ein höherer Timeout hätte nicht geholfen (er greift nicht beim Verbindungsaufbau) und ist bei ~1,1 s Antwortzeit nicht
+nötig.
+
+Nebenbefund der lokalen Testumgebung (nicht beim Kunden): Die temporäre WordPress-Testinstallation war beschädigt
+(Core-Dateien u. a. `wp-includes/Requests/src/Cookie.php` fehlten, jeder HTTP-Abruf endete mit einem Fatal Error) und
+blockierte externe Abrufe (`WP_HTTP_BLOCK_EXTERNAL` aus dem Frontend-Test). Core aus dem offiziellen Paket 7.1.4
+(SHA-1 geprüft) ergänzt; Plugin und Daten waren nicht betroffen.
+
+**Reparatur (A102):** Im Adapter `fetch_with_retry()`: Endet ein Abruf mit einer Zeitüberschreitung (`cURL error 28`
+bzw. „timed out“), wird **dieselbe URL genau einmal** nach 2 s erneut abgerufen (`RETRY_PAUSE`). **Kein** Retry bei
+HTTP 403/404/500 usw., leerer Antwort, anderen Netzwerkfehlern (z. B. DNS), ungültigem JSON oder 0 Terminen. Scheitert
+auch der zweite Versuch, bricht die Quelle wie bisher ab: „Zeitüberschreitung auch beim zweiten Versuch. Quelle nicht
+erreichbar: cURL error 28: … Vorhandene Veranstaltungen dieser Quelle wurden nicht verändert.“ Debug-Log (nur mit
+`WP_DEBUG`): `[eventcrawler][das-zentrum-bayreuth] Zeitüberschreitung bei Versuch 1/2 (<URL>): … – neuer Versuch in
+2 s.` bzw. `Fehler bei Versuch 2/2 (<URL>): …`. Timeout unverändert 20 s, Basisklasse, Crawler und andere Quellen
+unverändert. Ungünstigster Fall je Seite: 10 s + 2 s + 10 s.
+
+**Aktuelle API (live, 2026-10-29):**
+
+| Punkt | Befund |
+|---|---|
+| Endpunkt / Parameter | unverändert `/wp-json/tribe/events/v1/events?per_page=50&page={n}` |
+| Standardzeitraum | unverändert heute 00:00 bis +2 Jahre (`next_rest_url`: `start_date=2026-10-29 00:00:00`, `end_date=2028-10-29 23:59:59`, `status=publish`) |
+| Antwort | `events`, `rest_url`, `next_rest_url`/`previous_rest_url`, `total` 69, `total_pages` 2; Seite 1: 50, Seite 2: 19 |
+| Termine | **69** (29.10.2026–09.12.2027), 69 verschiedene IDs, alle `timezone` Europe/Berlin; Parser offline 69 gültig, 0 fehlerhaft |
+| Orte | „DAS ZENTRUM – Europasaal“ (ID 58, Äußere Badstraße 7a, Bayreuth) 51; „DAS ZENTRUM – Kleinkunstbühne“ (**ID 60 weiterhin ohne Adresse und Stadt**) 18 → Regel A82 unverändert gültig. „Ganzes Haus“ kommt derzeit nicht vor |
+| gegenüber 2026-10-15 | 8 IDs vergangen (Termine 15.–28.10.), 4 neu (1064, 1072, 1076, 1085), 1 echte Änderung: Jan Van Weyde 09.12. (ID 582) Europasaal → Kleinkunstbühne → UPDATE desselben Datensatzes |
+| Website vs. API | Theme-JSON der Seite `/veranstaltungen/`: 70 Termine = 69 der API + Jonas Greiner 23.11.2028 (nach dem +2-Jahre-Fenster, bekannt). JSON-LD der ersten 12 Termine (Titel, Datum, Uhrzeit, Ort, URL) **identisch** mit der API |
+
+**Live-Tests nach der Reparatur** (AJAX `eventcrawler_crawl_source`, je Quelle ein Request):
+
+| Lauf | gefunden | neu | aktualisiert | unverändert | gefiltert | fehlerhaft | Dauer |
+|---|---|---|---|---|---|---|---|
+| Einzelcrawl 1 | 69 | 4 | 1 | 64 | 0 | 0 | 3,5 s |
+| Einzelcrawl 2 | 69 | 0 | 0 | 69 | 0 | 0 | 3,6 s |
+| Einzelcrawl 3 | 69 | 0 | 0 | 69 | 0 | 0 | 3,6 s |
+
+„Alle Quellen“ danach: 11 von 11 erfolgreich (389 s), DAS ZENTRUM 69 unverändert in 7,9 s ohne Retry; 0 Termine von
+Bayreuth Tourismus am Ort DAS ZENTRUM; XML ohne Dubletten (03-crawler.md Abschnitt 24).
+
+Ergebnis: Quelle wieder betriebsbereit; Primärquelle bleibt die API, Bayreuth Tourismus wird **nicht** als Ersatz
+verwendet (A91 unverändert).
 
 ## 6. Neustadt bei Coburg
 

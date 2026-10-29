@@ -79,7 +79,11 @@ Hilfsfunktionen der Basisklasse:
 - Zugriffssperren: Antwortet eine Quelle auf diesen User-Agent gezielt mit 403/503, wird sie nicht umgangen (A85,
   04-quellen.md „Zurückgestellte / schwer erreichbare Quellen“).
 - `fetch_html( $url, $timeout = null )`: `wp_remote_get()` mit 20 s Timeout (je Adapter überschreibbar, Bad Steben 30 s), max. 3 Redirects, max. 5 MB, User-Agent
-  `Eventcrawler/<version> (WordPress; <home_url>)`. Prüft `is_wp_error()`, HTTP-Status 200 und einen nicht leeren Body.
+  `Eventcrawler/<version> (WordPress; <home_url>)`. Der Timeout gilt für den ganzen Abruf; für den **Verbindungsaufbau**
+  gilt unabhängig davon der feste Standard der Requests-Bibliothek von 10 s (`connect_timeout`, wird von
+  `wp_remote_get()` nicht durchgereicht; Meldung „Connection timed out after 100xx milliseconds“). Kein Retry in der
+  Basisklasse; DAS ZENTRUM wiederholt nur bei Zeitüberschreitung genau einmal (A102, Abschnitt 24).
+  Prüft `is_wp_error()`, HTTP-Status 200 und einen nicht leeren Body.
   Jeder Fehler wird als `WP_Error` zurückgegeben. Seit 2026-09-30 läuft der Body durch `to_utf8()`:
   - gültiges UTF-8 bleibt **unverändert**, auch wenn der Header einen anderen Zeichensatz nennt (sonst Doppelkodierung
     „CafÃ©“)
@@ -214,7 +218,7 @@ wurden nicht verändert.“). Übergabe an die Listenseite per Transient `eventc
 
 | Situation | Verhalten |
 |---|---|
-| Netzwerkfehler / Timeout | `WP_Error` → rote Meldung „Crawler fehlgeschlagen (…): Quelle nicht erreichbar: … Vorhandene Veranstaltungen wurden nicht verändert.“ |
+| Netzwerkfehler / Timeout | `WP_Error` → rote Meldung „Crawler fehlgeschlagen (…): Quelle nicht erreichbar: … Vorhandene Veranstaltungen wurden nicht verändert.“ Nur DAS ZENTRUM: bei Zeitüberschreitung zuerst genau ein weiterer Versuch, final „Zeitüberschreitung auch beim zweiten Versuch. Quelle nicht erreichbar: …“ (A102) |
 | HTTP-Status ≠ 200 | dito, „Quelle antwortet mit HTTP 500.“ |
 | leerer Body | dito, „Quelle liefert eine leere Antwort.“ |
 | keine Event-Container gefunden | dito, „Keine Veranstaltungen gefunden – die Seitenstruktur hat sich vermutlich geändert.“ Das wird bewusst **nicht** als „0 Events“ gewertet |
@@ -736,3 +740,46 @@ Auswahl Nürnberg/Fürth (A93) liegt vollständig im Adapter; die zentrale Ortsr
 
 - Strikt nacheinander, „Quelle 1 von 11“ bis „Quelle 11 von 11“; Browser-AJAX stabil. Längster Einzelrequest
   Helmbrechts (76,4 s, 64 % von 120 s).
+
+
+## 24. DAS ZENTRUM: Zuverlässigkeit, ein Retry bei Zeitüberschreitung (2026-10-29)
+
+Anlass: Kundenmeldung „DAS ZENTRUM liefert keine Ergebnisse“ nach einem einmaligen Abbruch „cURL error 28: Connection
+timed out after 10004 milliseconds“. Diagnose und Messwerte in 04-quellen.md Abschnitt 5 „Zuverlässigkeit“: nicht
+reproduzierbar (14 von 14 Abrufen HTTP 200 in ~1,1 s), API/Schema/Parameter unverändert; die 10 s sind der feste
+`connect_timeout` der Requests-Bibliothek (Verbindungsaufbau), nicht unser `HTTP_TIMEOUT` von 20 s.
+
+Änderung (A102), **nur** im Adapter DAS ZENTRUM: `fetch_with_retry()` wiederholt einen Seitenabruf bei
+Zeitüberschreitung genau einmal nach 2 s; sonst kein Retry. Keine Änderung an Basisklasse, Crawler, Admin, JS,
+Repository, Filter, Export oder DB; andere Quellen unverändert.
+
+| Test | Ergebnis |
+|---|---|
+| `tools/test-das-zentrum-bayreuth.php` | **65** bestanden (45 bisher + 20 neu: Erfolg mit 2 Seiten, Timeout Seite 1/2 mit erfolgreichem Retry, zweimal Timeout, Timeout dann HTTP 500, HTTP 500/403/404 ohne Retry, DNS-Fehler ohne Retry, ungültiges JSON, 0 Events, Debug-Log, Crawler-Fehler lässt Datensätze inkl. `last_seen_at`/`content_hash` unverändert) |
+| übrige 10 Suites | 45 / 35 / 90 / 97 / 156 / 41 / 46 / 35 / 53 / 38 bestanden |
+| Einzelcrawls 1–3 (AJAX) | 69 gefunden; 4 neu, 1 aktualisiert (echte Ortsänderung ID 582), 64 unverändert / 69 unverändert / 69 unverändert; 3,5 / 3,6 / 3,6 s; 2 Abrufe je Lauf, kein Retry nötig |
+| Datenbestand | 73 Altdatensätze erhalten (gleiche DB-ID und `external_id`), 8 vergangene Termine unverändert inkl. `last_seen_at`; 0 doppelte `external_id`, 0 abweichende `content_hash` (3227 Events) |
+| Bayreuth Tourismus | 0 Datensätze am Ort DAS ZENTRUM (A91 wirkt), 0 gleiche Titel+Datum mit DAS ZENTRUM |
+| XML | wohlgeformt, UTF-8, kein BOM, kein CR, kein LF am Ende; DAS ZENTRUM 77 Termine → 76 Zeilen (Jahreskonzert 21.11. mit zwei Uhrzeiten), 0 identische Zeilen am selben Tag |
+
+### „Alle Quellen“ mit 11 aktiven Quellen (live, 2026-10-29, AJAX je Quelle wie das Admin-JS, per HTTP-Client)
+
+Die Datenbank der Testinstallation stammte vom 2026-10-15; daher viele neue Termine.
+
+| Quelle | Request | Ergebnis |
+|---|---|---|
+| Burg Rabenstein | 1,9 s | 161 gefunden, 21 neu, 140 unverändert |
+| Bad Steben | 11,4 s | 414 gefunden, 59 neu, 1 aktualisiert, 354 unverändert |
+| Coburg | 44,7 s | 344 gefunden, 131 neu, 211 unverändert, 2 fehlerhaft |
+| Theater Selb | 48,2 s | 28 gefunden, 27 unverändert, 1 gefiltert |
+| DAS ZENTRUM Bayreuth | 7,9 s | 69 gefunden, 69 unverändert (kein Retry; Antwort langsamer als in den Einzelläufen) |
+| Schützenhaus Münchberg | 9,4 s | 52 gefunden, 10 neu, 2 aktualisiert, 39 unverändert, 1 fehlerhaft |
+| Stadtsteinach | 84,7 s | 46 gefunden, 4 neu, 37 unverändert, 1 gefiltert, 4 fehlerhaft |
+| Helmbrechts | 63,0 s | 34 gefunden, 5 neu, 1 aktualisiert, 26 unverändert, 2 fehlerhaft |
+| Kronach | 65,8 s | 69 gefunden, 32 neu, 33 unverändert, 3 gefiltert, 1 fehlerhaft |
+| Bayreuth Tourismus | 3,4 s | 627 gefunden, 369 neu, 7 aktualisiert, 233 unverändert, 3 gefiltert, 15 fehlerhaft |
+| Concertbüro Franken | 33,0 s | 325 gefunden, 30 neu, 3 aktualisiert, 292 unverändert |
+| **Summe** | **389 s** gesamt | **11 von 11 erfolgreich**; längster Request Stadtsteinach 84,7 s (71 % von 120 s) |
+
+Keine PHP-Warnings oder Notices des Plugins im Debug-Log. Ein Browserlauf (Edge) wurde in dieser Phase nicht
+durchgeführt; geprüft wurde derselbe AJAX-Endpunkt mit angemeldeter Sitzung und Nonce.

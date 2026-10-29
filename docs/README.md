@@ -20,7 +20,7 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | Entwickler-Werkzeuge (nicht Teil des Plugins) | `C:\xampp\htdocs\kulmbacher\tools` |
 | Kundenplugin „WP Kulmbacher Land“ (nur Referenz, nicht ändern) | `C:\xampp\htdocs\kulmbacher\wp-events-manager`, siehe [09-wpem-integration.md](09-wpem-integration.md) und [10-frontend.md](10-frontend.md) |
 
-## Aktueller Entwicklungsstand (Stand: 2026-10-28)
+## Aktueller Entwicklungsstand (Stand: 2026-10-29)
 
 - **Phase 1 – Dokumentation:** erledigt.
 - **Phase 2 – Plugin-Grundgerüst:** erledigt und in einer WordPress-Testinstallation getestet:
@@ -128,7 +128,10 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   - 73 Termine live gespeichert; Ort und Adresse aus der API, Kleinkunstbühne mit Stadt über die Ort-ID (A82)
   - Überschneidung mit Bayreuth Tourismus analysiert (ca. 40 von 73 Terminen), **keine** quellenübergreifende Deduplizierung
   - Integration ohne Änderung an Core, Admin, JS, Filter, Export und DB; „Alle Quellen“ mit 5 Quellen ~113 s
-  - Tests: `tools/test-das-zentrum-bayreuth.php` (45 Tests)
+  - Tests: `tools/test-das-zentrum-bayreuth.php` (45 Tests, seit 2026-10-29: 65)
+  - **Zuverlässigkeit (2026-10-29):** Kundenmeldung „keine Ergebnisse“ nach einmaligem Abbruch beim Verbindungsaufbau
+    (cURL 28 nach 10 s); nicht reproduzierbar, API unverändert (69 Termine). Genau ein Retry nur bei Zeitüberschreitung,
+    nur in diesem Adapter (A102); „Alle Quellen“ 11 von 11 in 389 s (03-crawler.md Abschnitt 24)
 - **Sechste aktive Quelle Schützenhaus Münchberg (2026-10-15):** erledigt und getestet (siehe [04-quellen.md](04-quellen.md) Abschnitt 9):
   - Zugriff mit dem Plugin-User-Agent geprüft (200); WordPress/Elementor, eine Programmseite (1 Abruf, ~6 s)
   - Matching über Post-ID + laufende Nummer; Verschiebungen werden als UPDATE erkannt
@@ -249,7 +252,8 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   ```
   C:\xampp\php\php.exe tools\test-theater-selb.php <pfad\zu\wp-load.php>
   ```
-- Parsertests DAS ZENTRUM Bayreuth (eingebettete API-Antworten, keine HTTP-Abrufe, keine DB-Änderung):
+- Parser- und Abruftests DAS ZENTRUM Bayreuth (eingebettete API-Antworten, HTTP über `pre_http_request` ersetzt –
+  keine echten Abrufe; Crawler-Fehlertest in einer Transaktion mit Rollback; Laufzeit ~17 s wegen der Retry-Pausen):
   ```
   C:\xampp\php\php.exe tools\test-das-zentrum-bayreuth.php <pfad\zu\wp-load.php>
   ```

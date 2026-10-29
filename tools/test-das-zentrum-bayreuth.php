@@ -4,7 +4,8 @@
  *
  * Liegt bewusst außerhalb von wp-plugin/ und wird nicht mit dem Plugin ausgeliefert.
  * Arbeitet nur mit eingebetteten API-Antworten im Aufbau der echten TEC-REST-API (Stand 2026-10-15):
- * keine HTTP-Abrufe, keine Datenbankänderung.
+ * keine echten HTTP-Abrufe (Abruf-Tests ersetzen die Antwort über den Filter pre_http_request), keine
+ * Datenbankänderung (der Crawler-Fehlertest läuft in einer Transaktion mit Rollback).
  *
  * Aufruf (Plugin muss aktiviert sein):
  *   php tools/test-das-zentrum-bayreuth.php <pfad/zu/wp-load.php>
@@ -186,6 +187,103 @@ $e    = $one( dz_item( 285, 'Ingmar Stadelmann &#8211; liest Höcke', '2026-11-2
 $rule = Eventcrawler_Filter::find_matching_rule( $e['title'] . ' ' . $e['description'], $rules );
 ec_check( 'echter Titel "liest Höcke" wird nicht gefiltert', $rule, null );
 ec_check( 'ungewöhnliche Beginnzeit 19:33 unverändert', $e['start_time'], '19:33' );
+
+echo "Abruf: Timeout, ein Retry, Fehlerfälle (HTTP-Antworten über pre_http_request ersetzt, kein echter Abruf)\n";
+$dz_queue    = array(); // Antworten in Abrufreihenfolge: string = Body (HTTP 200), int = HTTP-Status, WP_Error = Transportfehler.
+$dz_requests = array();
+add_filter(
+	'pre_http_request',
+	function ( $pre, $args, $url ) use ( &$dz_queue, &$dz_requests ) {
+		$dz_requests[] = $url;
+		$next          = array_shift( $dz_queue );
+		if ( null === $next ) {
+			return new WP_Error( 'http_request_failed', 'Test: keine Antwort vorgesehen' );
+		}
+		if ( is_wp_error( $next ) ) {
+			return $next;
+		}
+		return array(
+			'headers'  => array( 'content-type' => 'application/json; charset=UTF-8' ),
+			'body'     => is_int( $next ) ? 'Fehlerseite' : $next,
+			'response' => array( 'code' => is_int( $next ) ? $next : 200, 'message' => '' ),
+			'cookies'  => array(),
+			'filename' => null,
+		);
+	},
+	10,
+	3
+);
+$timeout = new WP_Error( 'http_request_failed', 'cURL error 28: Connection timed out after 10004 milliseconds' );
+$p1      = dz_page( array( dz_item( 233, 'Robert Alan &#8211; Pervekt', '2026-10-29 20:00:00', $kleinkunst ), dz_item( 237, 'Stadt.Land.Mord.', '2026-10-30 20:00:00', $europasaal ) ), 2 );
+$p2      = dz_page( array( dz_item( 1064, 'Das 5. Rudelsingen &#8211; Gruppen-Karaoke', '2027-03-10 19:30:00', $europasaal ) ), 2 );
+$run     = function ( array $answers ) use ( &$dz_queue, &$dz_requests, $source ) {
+	$dz_queue    = $answers;
+	$dz_requests = array();
+	return $source->fetch_events();
+};
+$err_msg = function ( $r ) {
+	return is_wp_error( $r ) ? $r->get_error_message() : 'kein Fehler';
+};
+
+$log_file = tempnam( get_temp_dir(), 'dz-log' );
+$log_prev = ini_set( 'error_log', $log_file ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+
+$r = $run( array( $p1, $p2 ) );
+ec_check( 'Erfolg: 2 Seiten, 2 Abrufe', array( is_array( $r ) ? count( $r ) : $err_msg( $r ), count( $dz_requests ) ), array( 3, 2 ) );
+ec_check( 'Erfolg: produktive URLs', $dz_requests, array( Eventcrawler_Source_Das_Zentrum_Bayreuth::API_URL . '?per_page=50&page=1', Eventcrawler_Source_Das_Zentrum_Bayreuth::API_URL . '?per_page=50&page=2' ) );
+ec_check( 'Erfolg: Stable ID, Venue, Adresse, Stadt (ID 60 -> Bayreuth)', array( $r[0]['external_id'], $r[0]['venue_name'], $r[0]['venue_address'], $r[0]['city'], $r[1]['venue_address'], $r[2]['external_id'] ), array( '233', 'DAS ZENTRUM – Kleinkunstbühne', '', 'Bayreuth', 'Äußere Badstraße 7a', '1064' ) );
+
+$r = $run( array( $timeout, $p1, $p2 ) );
+ec_check( 'Timeout Seite 1, Retry erfolgreich: 3 Events, 3 Abrufe', array( is_array( $r ) ? count( $r ) : $err_msg( $r ), count( $dz_requests ) ), array( 3, 3 ) );
+ec_check( 'Retry: dieselbe URL', $dz_requests[0] === $dz_requests[1], true );
+
+$r = $run( array( $p1, $timeout, $p2 ) );
+ec_check( 'Timeout Seite 2, Retry erfolgreich', array( is_array( $r ) ? count( $r ) : $err_msg( $r ), count( $dz_requests ) ), array( 3, 3 ) );
+
+$r = $run( array( $timeout, $timeout, $p1, $p2 ) );
+ec_check( 'zweimal Timeout: Fehler nach genau 2 Abrufen', array( is_wp_error( $r ), count( $dz_requests ) ), array( true, 2 ) );
+ec_check( 'zweimal Timeout: verständliche Meldung', $err_msg( $r ), 'Zeitüberschreitung auch beim zweiten Versuch. Quelle nicht erreichbar: cURL error 28: Connection timed out after 10004 milliseconds' );
+
+$r = $run( array( $p1, $timeout, $timeout, $p2 ) );
+ec_check( 'zweimal Timeout auf Seite 2: keine Teildaten', array( is_wp_error( $r ), count( $dz_requests ) ), array( true, 3 ) );
+
+$r = $run( array( $timeout, 500 ) );
+ec_check( 'Timeout, dann HTTP 500: Fehler, kein dritter Versuch', array( $err_msg( $r ), count( $dz_requests ) ), array( 'Quelle antwortet mit HTTP 500.', 2 ) );
+
+foreach ( array( 500, 403, 404 ) as $code ) {
+	$r = $run( array( $code, $p1, $p2 ) );
+	ec_check( "HTTP {$code}: kein Retry", array( $err_msg( $r ), count( $dz_requests ) ), array( "Quelle antwortet mit HTTP {$code}.", 1 ) );
+}
+$r = $run( array( new WP_Error( 'http_request_failed', 'cURL error 6: Could not resolve host: www.das-zentrum.de' ), $p1, $p2 ) );
+ec_check( 'anderer Netzwerkfehler (DNS): kein Retry', array( $err_msg( $r ), count( $dz_requests ) ), array( 'Quelle nicht erreichbar: cURL error 6: Could not resolve host: www.das-zentrum.de', 1 ) );
+$r = $run( array( '<html>Wartung</html>', $p1 ) );
+ec_check( 'ungültiges JSON: Strukturfehler, kein Retry', array( is_wp_error( $r ) ? $r->get_error_code() : 'kein Fehler', count( $dz_requests ) ), array( 'eventcrawler_structure', 1 ) );
+$r = $run( array( dz_page( array() ), $p1 ) );
+ec_check( 'leere API-Antwort (0 Events): Fehler, kein Retry', array( is_wp_error( $r ) ? $r->get_error_code() : 'kein Fehler', count( $dz_requests ) ), array( 'eventcrawler_structure', 1 ) );
+
+ini_set( 'error_log', $log_prev ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+$log = (string) file_get_contents( $log_file );
+unlink( $log_file );
+if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+	ec_check( 'Debug-Log: Versuch 1/2 mit Quelle und URL', false !== strpos( $log, '[eventcrawler][das-zentrum-bayreuth] Zeitüberschreitung bei Versuch 1/2 (' . Eventcrawler_Source_Das_Zentrum_Bayreuth::API_URL . '?per_page=50&page=1)' ), true );
+	ec_check( 'Debug-Log: Versuch 2/2 (finaler Fehler)', false !== strpos( $log, '[eventcrawler][das-zentrum-bayreuth] Fehler bei Versuch 2/2' ), true );
+}
+
+echo "Crawler: finaler Timeout lässt vorhandene Daten unverändert\n";
+global $wpdb;
+$table    = $wpdb->prefix . 'eventcrawler_events';
+$snapshot = function () use ( $wpdb, $table ) {
+	return md5( wp_json_encode( $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE source = %s ORDER BY id", 'das-zentrum-bayreuth' ), ARRAY_A ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+};
+$before = $snapshot();
+$wpdb->query( 'START TRANSACTION' );
+$dz_queue    = array( $timeout, $timeout );
+$dz_requests = array();
+$r           = ( new Eventcrawler_Crawler( new Eventcrawler_Repository() ) )->run( $source );
+$after       = $snapshot();
+$wpdb->query( 'ROLLBACK' );
+ec_check( 'Crawler liefert WP_Error', is_wp_error( $r ), true );
+ec_check( 'Datensätze inkl. last_seen_at/content_hash unverändert', $after, $before );
 
 echo "\n{$passed} bestanden, {$failed} fehlgeschlagen\n";
 exit( $failed ? 1 : 0 );
