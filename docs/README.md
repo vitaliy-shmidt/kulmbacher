@@ -176,7 +176,10 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
     Pagination, aufklappbare Details), `[eventcrawler_calendar]`; Aliase `[events_list]`/`[events_calendar]`, sobald WPEM
     inaktiv ist
   - Einmalige, idempotente WPEM-Übernahme mit Probelauf und exakter Dublettenprüfung
-  - XML-Export bytegleich, alle 11 Quellen unverändert; Tests: `tools/test-frontend.php` (117 Tests)
+  - XML-Export bytegleich, alle 11 Quellen unverändert; Tests: `tools/test-frontend.php` (156 Tests)
+  - **Gestaltung überarbeitet (2026-10-29):** Event-Karten, größerer Kalender mit Agenda auf dem Smartphone, Filter,
+    Tagesnavigation, Seiten, Leerzustand, Accessibility; nur Markup/CSS, alles unter `.eventcrawler` gescopt
+    (10-frontend.md „Gestaltung“)
   - **WPEM noch nicht deaktivieren** – offene Punkte und Abschaltplan in 10-frontend.md Abschnitte 13/14
 - **Noch nicht implementiert:**
   - Export nach frei wählbarem Datumsbereich, Stadt oder Checkbox-Auswahl

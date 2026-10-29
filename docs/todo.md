@@ -1,6 +1,6 @@
 # TODO – priorisierte Aufgabenliste
 
-Stand: 2026-10-28 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
+Stand: 2026-10-29 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme; Gestaltung überarbeitet). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
 
 ## WPEM-Ersatz (2026-10-28) ← NÄCHSTER SCHRITT
 
@@ -12,6 +12,8 @@ Details, Funktionsmatrix, Entscheidungen E1–E10 und Abschaltplan: [10-frontend
 - [x] Aliase `[events_list]`/`[events_calendar]` ohne aktives WPEM
 - [x] WPEM-Übernahme mit Probelauf, idempotent, exakte Dublettenprüfung
 - [x] Tests `tools/test-frontend.php` (117), HTTP-Sicherheit, Paralleltest, Responsive 1280/768/375, Regression grün, XML bytegleich
+- [x] Gestaltung überarbeitet (2026-10-29): Karten, Kalender + mobile Agenda, Filter, Accessibility; 156 Tests, 1440/768/375 geprüft
+- [ ] **Kunde:** Darstellung im echten Betheme prüfen; rote Balken „Event-Calendar“/„Event-List“ im Seiteninhalt entfernen (Shortcodes bringen eigene Überschriften mit)
 - [ ] **Kunde (E1):** Welche Seiten nutzen `[events_list]`/`[events_calendar]` (Zugang zur Kundeninstallation/Staging)?
 - [ ] **Kunde (E2):** Sind `/veranstaltung/…`/`/veranstaltungsort/…` indexiert/verlinkt? Falls ja: 301-Redirects bauen (10-frontend.md Abschnitt 11)
 - [ ] **Kunde (E3/E4):** Wird der CSV-/XML-Import bzw. CSV-Export von WPEM genutzt? Falls ja: Ersatz vor der Abschaltung

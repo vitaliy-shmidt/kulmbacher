@@ -254,7 +254,7 @@ nicht zusammengeführt (A66, A84).
 | `includes/class-eventcrawler-wpem-migration.php` | Probelauf und Übernahme aus WPEM |
 | `includes/admin/class-eventcrawler-event-admin.php` | „Veranstaltung hinzufügen“ (anlegen, bearbeiten, duplizieren) |
 | `includes/admin/class-eventcrawler-wpem-admin.php` | „WPEM-Übernahme“ |
-| `tools/test-frontend.php` | 117 Tests (Liste, Kalender, Aliase, manuelle Termine, Übernahme) |
+| `tools/test-frontend.php` | 156 Tests (Liste, Kalender, Darstellung, Aliase, manuelle Termine, Übernahme) |
 
 Kein JavaScript im Frontend: Details klappen mit nativem `<details>` auf, alle Ansichten sind normale GET-Links.
 Keine Nonces nötig, weil das Frontend nur liest; keine AJAX-Endpunkte für Besucher.
@@ -263,8 +263,8 @@ Keine Nonces nötig, weil das Frontend nur liest; keine AJAX-Endpunkte für Besu
 
 | Shortcode | Attribute | Ausgabe |
 |---|---|---|
-| `[eventcrawler_events]` | `view` (`list` Standard, `day`), `per_page` (20, max. 100), `sources` (kommagetrennte Slugs, z. B. `manual,coburg`; leer = alle; nur unbekannte Slugs = nichts), `city` (feste Stadt), `date` (Starttag), `show_filters` (1/0), `show_calendar` (1/0) | **Liste:** alle Termine ab Datum (Standard heute), nach Tagen gruppiert, serverseitig paginiert. **Tagesansicht:** ein Tag mit Vor/Zurück wie WPEM. Eine Suche gilt in beiden Ansichten über alle Tage ab Datum |
-| `[eventcrawler_calendar]` | `month`, `year`, `sources`, `link` (URL der Listenseite; Standard: aktuelle Seite) | Monatsraster Mo–So, Vor/Zurück, je Tag Anzahl, bis zu 2 Titel (auf den Termin verlinkt) und „+n weitere“; mobil nur Anzahl |
+| `[eventcrawler_events]` | `view` (`list` Standard, `day`), `per_page` (20, max. 100), `sources` (kommagetrennte Slugs, z. B. `manual,coburg`; leer = alle; nur unbekannte Slugs = nichts), `city` (feste Stadt), `date` (Starttag), `show_filters` (1/0), `show_calendar` (1/0), `title` (Überschrift, Standard „Veranstaltungen“, leer = keine) | **Liste:** alle Termine ab Datum (Standard heute), nach Tagen gruppiert, serverseitig paginiert. **Tagesansicht:** ein Tag mit Vor/Zurück wie WPEM. Eine Suche gilt in beiden Ansichten über alle Tage ab Datum |
+| `[eventcrawler_calendar]` | `month`, `year`, `sources`, `link` (URL der Listenseite; Standard: aktuelle Seite), `title` (Standard „Veranstaltungskalender“, leer = keine) | Monatsraster Mo–So, Vor/Zurück, je Tag Anzahl, bis zu 3 Termine (Uhrzeit + Titel, auf den Termin verlinkt) und „+n weitere“ (auf den Tag); mobil Agenda (siehe Gestaltung) |
 | `[events_list]` | `limit`, `date` (wie WPEM; `venue`, `show_past` ohne Wirkung) | **Alias**, nur wenn WPEM inaktiv ist: Tagesansicht |
 | `[events_calendar]` | `month`, `year` | **Alias**, nur wenn WPEM inaktiv ist: Kalender |
 
@@ -273,9 +273,13 @@ werden ignoriert. Fremde Parameter der Seite (z. B. `page_id`) bleiben beim Abse
 
 ### Ausgabe je Termin
 
-Zeile: Uhrzeit (`18:30 Uhr`, `18:30–22:00 Uhr`, `ganztägig` oder leer – nie `00:00` erfunden), Titel, „Ort, Stadt“.
-Aufgeklappt: Datum (bei mehrtägigen „bis …“), Uhrzeit, Ort, Adresse, Stadt, Beschreibung, „Zur Webseite“, für
-Administratoren „Bearbeiten“ (nur manuelle Termine). Anker `#eventcrawler-event-{id}`.
+Karte: Uhrzeit (`18:30 Uhr`, `18:30–22:00 Uhr`, `ganztägig` nur bei `all_day = 1`; ohne Uhrzeit **kein** Zeitfeld –
+nie `00:00` erfunden), Titel (`h4`), Ort, darunter „Adresse, Stadt“ (leere Teile entfallen, Ort = Stadt nur einmal),
+Button „Details anzeigen“/„Details schließen“ (natives `<details>`). Aufgeklappt: Datum (bei mehrtägigen „bis …“),
+Uhrzeit, Ort, Adresse, Stadt als kleine Labels mit Werten, Beschreibung, „Zur Veranstaltungsseite“ (neues Fenster,
+`rel="noopener noreferrer"`), für Administratoren „Bearbeiten“ (nur manuelle Termine). Die Quelle (`source`) wird nicht
+angezeigt. Status im Titel (z. B. „ABGESAGT“) bleibt unverändert, keine eigene Statusdarstellung. Anker
+`#eventcrawler-event-{id}`.
 
 - **Beschreibung** nur bei manuellen Terminen (eigene Texte); Filter `eventcrawler_frontend_show_description`
   (`$show`, `$event`) für eine spätere Freigabe gecrawlter Texte (E9).
@@ -287,10 +291,39 @@ Administratoren „Bearbeiten“ (nur manuelle Termine). Anker `#eventcrawler-ev
 - **Escaping:** alle Werte mit `esc_html()`/`esc_attr()`/`esc_url()`; SQL nur über `$wpdb->prepare()` im Repository.
 - **Performance:** je Ansicht eine `COUNT`-Abfrage und eine `LIMIT`-Abfrage über den Index `start_date`, die
   Stadtliste per `DISTINCT city`; Kalender nur `id, title, start_date, start_time, all_day` des Monats. Kein Cache.
-- **Responsive:** ab 782 px Breite zweispaltige Zeile, darunter gestapelt; Kalender mobil nur Tageszahl + Anzahl.
-  Geprüft bei 1280, 768 und 375 px (Headless-Edge, Theme Twenty Twenty-Five): kein horizontales Scrollen.
-- **Theme:** Schrift und Farben vom Theme; Anpassung über `--eventcrawler-accent`, `--eventcrawler-border`,
-  `--eventcrawler-muted`.
+
+### Gestaltung (überarbeitet 2026-10-29, nur Markup/CSS, keine Datenlogik)
+
+- **Aufbau:** Bereichsüberschrift (`h2`, dezente Linie mit kurzem Akzent statt Farbbalken) → Filter → Monatsübersicht
+  (aufklappbar; entfällt, wenn auf der Seite schon ein `[eventcrawler_calendar]` steht) → Tagesnavigation bzw.
+  Tagesüberschriften → Anzahl („23 Veranstaltungen gefunden“ bei Suche/Stadt) → Karten → Seiten. Kalender und Liste
+  nutzen volle Containerbreite, dieselben Abstände, Schrift und Akzentfarbe.
+- **Kalender:** `<table>` mit `caption` (nur Screenreader), `th scope=col` mit `abbr` (Mo = Montag), Kopf „← Monat →“ mit
+  Icon-Buttons (Links mit `aria-label` „Vorheriger Monat: …“). Zellen ≥ 8rem hoch, Tagesnummer + Anzahl, bis 3 Termine
+  (zweizeilig gekürzt, voller Titel im Link-Text), „+n weitere“ mit `aria-label` „Alle n Veranstaltungen am … anzeigen“.
+  Heute: Akzent-Kreis + `aria-current="date"`; ausgewählter Tag (`?date=`): Rahmen + heller Hintergrund, im
+  `aria-label` „ausgewählt“; Tage der Nachbarmonate grau ohne Link.
+- **Filter:** Fläche mit Rahmen, Labels über den Feldern, Felder 44 px hoch, eigener Fokusrahmen; „Anzeigen“ primär,
+  „Zurücksetzen“ dezent. Stadtliste alphabetisch (Datenbank-Sortierung).
+- **Tagesnavigation:** „‹ Vorheriger Tag | Datum (`h3`) | Nächster Tag ›“, mobil Datum oben, Buttons nebeneinander.
+- **Seiten:** „‹ Zurück 1 … 4 5 6 … 20 Weiter ›“ (`aria-current="page"`), mobil „Seite 5 von 20“.
+- **Leerzustand:** gestrichelter Kasten „Für diesen Zeitraum/Tag wurden keine Veranstaltungen gefunden.“, bei aktiver
+  Suche/Stadt „Für Ihre Suche …“ + „Filter zurücksetzen“.
+- **Responsive:** ab 600 px Karte zweispaltig (Uhrzeit links), darunter gestapelt; Filter mobil untereinander.
+  Unter 768 px ersetzt eine **Agenda** das Raster: je Tag mit Terminen Datum, Anzahl, bis 3 Termine, „+n weitere“;
+  im laufenden Monat sind vergangene Tage eingeklappt. Geprüft bei 1440, 768 und 375 px (Headless-Edge; 375/768 px
+  im iframe, weil Edge-Fenster unter Windows mindestens ca. 500 px breit sind): kein horizontales Scrollen.
+- **Accessibility:** sichtbarer Fokus (2 px Akzent) an Links, Buttons, `summary`, Feldern; alle Aktionen per Tastatur
+  (GET-Links, Submit-Button, `<details>`); Icons `aria-hidden`; „(öffnet in neuem Fenster)“ für Screenreader;
+  Kontrast Text/Hintergrund ≥ 4,5:1, Feldrahmen ≥ 3:1; `prefers-reduced-motion` schaltet Übergänge ab.
+- **Theme-Scoping:** alle Regeln unter `.eventcrawler` (vom Test geprüft), keine globalen Element-Selektoren, kein
+  `!important` außer bei reduzierter Bewegung; Theme-Regeln wie `table td`, `button`, `select`, `ul` werden über
+  Klassenselektoren übersteuert, Header/Footer/Seitenbreite bleiben unberührt. Schriftart vom Theme. Anpassung über
+  `--eventcrawler-accent` (Standard `#a3191f`), `--eventcrawler-border`, `--eventcrawler-muted`.
+- **Betheme:** lokal nicht vorhanden; geprüft mit Twenty Twenty-Five plus nachgestellten globalen Betheme-Regeln
+  (große Überschriften, Tabellen-Hover, blaue Buttons, Input-Abstände, `ul`-Aufzählungszeichen). Auf dem
+  Kundensystem noch einmal ansehen. Die roten Balken „Event-Calendar“/„Event-List“ stehen im Seiteninhalt (nicht im
+  Plugin) und sollten dort entfernt werden; die Shortcodes bringen eigene Überschriften mit (`title=""` blendet sie aus).
 
 ### Manuelle Termine (Admin)
 
@@ -310,7 +343,7 @@ Dubletten mit Grund, Link zum WPEM-Beitrag), übernimmt erst per Button. Mapping
 
 | Test | Ergebnis |
 |---|---|
-| `tools/test-frontend.php`, mit aktivem und mit deaktiviertem WPEM | 117/117 |
+| `tools/test-frontend.php`, mit aktivem und mit deaktiviertem WPEM | 117/117 (seit 2026-10-29: 156/156) |
 | alle bisherigen Suites (Export-Regeln 97, Link-Bezeichnungen 90, 9 Adapter-Suites 383) | grün, unverändert |
 | XML-Gesamtexport vor/nach (2562 Termine) | **bytegleich** (MD5 `d36fe6ee…`) |
 | Adapter-, Exporter- und Filterdateien | unverändert (MD5) |
@@ -319,6 +352,8 @@ Dubletten mit Grund, Link zum WPEM-Beitrag), übernimmt erst per Button. Mapping
 | HTTP: Übernahme zweimal | 3 übernommen, dann 0 |
 | Paralleltest WPEM `[events_list]` ↔ `[eventcrawler_events view="day" sources="manual"]` (2 Tage) | gleiche Termine, Reihenfolge, Uhrzeiten, Ort, Adresse, Links; nur die PLZ fehlt (E6) |
 | WPEM deaktiviert | `[events_list]`/`[events_calendar]` zeigen die Eventcrawler-Ausgabe |
+| Gestaltung 2026-10-29: 18 Ansichten (Liste, Seiten, Stadt, Suche, Quelle, Tag, Kalender) vor/nach | gleiche IDs, Reihenfolge, Städte, alle alten Links vorhanden; Kalender zeigt je Tag zusätzlich den 3. Termin |
+| Gestaltung 2026-10-29: XML, Tabellen-Prüfsumme, 27 Backend-Dateien | unverändert |
 
 Gefundener und behobener Fehler beim Testen: Die Dublettenprüfung schloss manuelle Termine ohne `external_id`
 aus (`NOT (… LIKE …)` mit NULL), jetzt `external_id IS NOT NULL AND …`.

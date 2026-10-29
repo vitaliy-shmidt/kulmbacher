@@ -59,6 +59,7 @@ function ec_check( $name, $actual, $expected ) {
 function ec_render( $shortcode, array $get = array() ) {
 	$_GET                   = $get;
 	$_SERVER['REQUEST_URI'] = '/veranstaltungen/' . ( $get ? '?' . http_build_query( $get ) : '' );
+	Eventcrawler_Frontend::reset_page_state();
 	$html                   = do_shortcode( $shortcode );
 	$_GET                   = array();
 	return $html;
@@ -127,7 +128,7 @@ try {
 	echo "Leere Tabelle\n";
 	$wpdb->query( "DELETE FROM {$table}" );
 	$html = ec_render( '[eventcrawler_events]' );
-	ec_check( 'leere DB: Hinweis statt Liste', false !== strpos( $html, 'Keine Veranstaltungen gefunden.' ), true );
+	ec_check( 'leere DB: Hinweis statt Liste', false !== strpos( $html, 'Für diesen Zeitraum wurden keine Veranstaltungen gefunden.' ), true );
 	ec_check( 'leere DB: keine Einträge', ec_ids( $html ), array() );
 	ec_check( 'leere DB: Kalender ohne Termine', false === strpos( ec_render( '[eventcrawler_calendar]' ), 'has-events' ), true );
 	ec_check( 'leere DB: keine Seitennavigation', false === strpos( $html, 'eventcrawler-pagination' ), true );
@@ -224,7 +225,7 @@ try {
 	ec_check( 'ganztägig', false !== strpos( $html, 'ganztägig' ), true );
 	ec_check( 'nie 00:00', false === strpos( $html, '00:00' ), true );
 	ec_check( 'mehrtägig: "bis" mit Enddatum und Endzeit', false !== strpos( $html, 'bis ' . Eventcrawler_Frontend::format_day( $d5 ) . ', 17:00 Uhr' ), true );
-	ec_check( 'Venue und Stadt in der Zeile', false !== strpos( $html, 'Stadthalle, Kulmbach' ), true );
+	ec_check( 'Ort und Adresse, Stadt in der Karte', false !== strpos( $html, '<p class="eventcrawler-event__venue">Stadthalle</p>' ) && false !== strpos( $html, '<p class="eventcrawler-event__address">Hauptstraße 1, Kulmbach</p>' ), true );
 	ec_check( 'Adresse angezeigt', false !== strpos( $html, '<dd>Hauptstraße 1</dd>' ), true );
 	ec_check( 'ohne Adresse kein Adressfeld bei B', 1, substr_count( $html, '<dt>Adresse</dt>' ) );
 	ec_check( 'Beschreibung manueller Termin sichtbar', false !== strpos( $html, 'Eigene Beschreibung A' ), true );
@@ -269,7 +270,7 @@ try {
 	$html = ec_render( '[eventcrawler_events view="day"]', array( 'date' => $d2 ) );
 	ec_check( 'nur Termine des Tages', ec_ids( $html ), array( $d, $e, $f, $g ) );
 	ec_check( 'Vor/Zurück-Links', false !== strpos( $html, 'date=' . $d1 ) && false !== strpos( $html, 'date=' . $day( '+3' ) ), true );
-	ec_check( 'Tag ohne Termine', false !== strpos( ec_render( '[eventcrawler_events view="day"]', array( 'date' => $day( '+3' ) ) ), 'Keine Veranstaltungen an diesem Tag.' ), true );
+	ec_check( 'Tag ohne Termine', false !== strpos( ec_render( '[eventcrawler_events view="day"]', array( 'date' => $day( '+3' ) ) ), 'Für diesen Tag wurden keine Veranstaltungen gefunden.' ), true );
 	ec_check( 'Tag bleibt im Filterformular erhalten', false !== strpos( $html, 'type="hidden" name="date" value="' . $d2 . '"' ), true );
 	ec_check( 'vergangener Tag abrufbar', ec_ids( ec_render( '[eventcrawler_events view="day"]', array( 'date' => $day( '-1' ) ) ) ), array( $c ) );
 	ec_check( 'Suche in Tagesansicht sucht alle kommenden Tage', ec_ids( ec_render( '[eventcrawler_events view="day"]', array( 'ec_search' => 'Markt' ) ) ), array( $b ) );
@@ -279,8 +280,8 @@ try {
 	$cal   = ec_render( '[eventcrawler_calendar]', array( 'ec_month' => $month ) );
 	ec_check( 'Monatstitel', false !== strpos( $cal, Eventcrawler_Exporter::MONTHS[ (int) substr( $month, 5, 2 ) ] . ' ' . substr( $month, 0, 4 ) ), true );
 	ec_check( 'Tag mit Terminen verlinkt', false !== strpos( $cal, 'date=' . $d5 ), true );
-	ec_check( 'Anzahl am Tag', false !== strpos( $cal, '<span class="eventcrawler-calendar__count">25</span>' ), true );
-	ec_check( '+n weitere', false !== strpos( $cal, '+23 weitere' ), true );
+	ec_check( 'Anzahl am Tag', false !== strpos( $cal, '<span class="eventcrawler-calendar__count" aria-hidden="true">25</span>' ), true );
+	ec_check( '+n weitere', false !== strpos( $cal, '+22 weitere' ), true );
 	ec_check( 'Titel verlinkt auf Anker', 1 === preg_match( '/date=' . preg_quote( $d5, '/' ) . '#eventcrawler-event-\d+/', $cal ), true );
 	ec_check( 'Vor/Zurück-Monat', false !== strpos( $cal, 'ec_month=' ), true );
 	ec_check( 'ungültiger Monat → aktueller Monat', false !== strpos( ec_render( '[eventcrawler_calendar]', array( 'ec_month' => '2026-13' ) ), Eventcrawler_Exporter::MONTHS[ (int) current_time( 'n' ) ] ), true );
@@ -288,6 +289,81 @@ try {
 	ec_check( 'link-Attribut javascript: ignoriert', false === stripos( ec_render( '[eventcrawler_calendar link="javascript:alert(1)"]', array( 'ec_month' => $month ) ), 'javascript:' ), true );
 	$grid = ec_render( '[eventcrawler_calendar month="2" year="2027"]' );
 	ec_check( 'Raster Februar 2027: 4 Wochen, 28 Tage', array( substr_count( $grid, '<tr>' ) - 1, substr_count( $grid, 'eventcrawler-calendar__number' ) ), array( 4, 28 ) );
+	$grid = ec_render( '[eventcrawler_calendar month="11" year="2026"]' );
+	ec_check( 'Nachbarmonate grau ohne Link (Nov. 2026: 6 + 6 Tage)', substr_count( $grid, 'is-outside' ), 12 );
+	ec_check( 'Raster mit Beschriftung und Wochentagen', false !== strpos( $grid, '<caption class="eventcrawler-sr-only">Veranstaltungen im November 2026</caption>' ) && false !== strpos( $grid, '<abbr title="Montag">Mo</abbr>' ), true );
+	ec_check( 'Monatspfeile mit aria-label', false !== strpos( $grid, 'aria-label="Vorheriger Monat: Oktober 2026"' ) && false !== strpos( $grid, 'aria-label="Nächster Monat: Dezember 2026"' ), true );
+	$raster = substr( $cal, 0, (int) strpos( $cal, 'class="eventcrawler-calendar__agenda"' ) );
+	ec_check( 'Raster: 3 Titel am vollen Tag', substr_count( $raster, 'date=' . $d5 . '#eventcrawler-event-' ), 3 );
+	ec_check( 'Kalendertitel ungekürzt', false !== strpos( $raster, '<span class="eventcrawler-calendar__event-title">Serie 01</span>' ), true );
+	ec_check( '+n weitere mit vollständigem aria-label', false !== strpos( $cal, 'aria-label="Alle 25 Veranstaltungen am ' . Eventcrawler_Frontend::format_day( $d5 ) . ' anzeigen"' ), true );
+	ec_check( 'Agenda für Smartphone vorhanden', false !== strpos( $cal, 'eventcrawler-calendar__agenda-days' ) && 2 === substr_count( $cal, '+22 weitere' ), true );
+	ec_check( 'Agenda: leerer Monat', false !== strpos( ec_render( '[eventcrawler_calendar month="2" year="2027"]' ), 'Im Februar 2027 sind keine Veranstaltungen eingetragen.' ), true );
+	$sel = ec_render( '[eventcrawler_calendar]', array( 'ec_month' => $month, 'date' => $d5 ) );
+	ec_check( 'ausgewählter Tag markiert (Raster und Agenda)', substr_count( $sel, 'is-selected' ), 2 );
+	ec_check( 'ausgewählter Tag im aria-label', false !== strpos( $sel, Eventcrawler_Frontend::format_day( $d5 ) . ( $d5 === $today ? ', heute' : '' ) . ', ausgewählt: 25 Veranstaltungen' ), true );
+	$now = ec_render( '[eventcrawler_calendar]' );
+	ec_check( 'heute: aria-current="date"', 1, substr_count( $now, 'aria-current="date"' ) );
+	ec_check( 'Kalender: Überschrift Veranstaltungskalender', false !== strpos( $now, '<h2 class="eventcrawler-section-title">Veranstaltungskalender</h2>' ), true );
+	ec_check( 'Kalender: title="" ohne Überschrift', false === strpos( ec_render( '[eventcrawler_calendar title=""]' ), 'eventcrawler-section-title' ), true );
+
+	echo "Darstellung\n";
+	$html = ec_render( '[eventcrawler_events per_page="100"]' );
+	$card = function ( $id ) use ( $html ) {
+		return preg_match( '#<li class="eventcrawler-event" id="eventcrawler-event-' . $id . '">.*?</li>\s*(?=<li class="eventcrawler-event"|</ul>)#s', $html, $m ) ? $m[0] : '';
+	};
+	ec_check( 'Überschrift Veranstaltungen', false !== strpos( $html, '<h2 class="eventcrawler-section-title">Veranstaltungen</h2>' ), true );
+	ec_check( 'title="" ohne Überschrift', false === strpos( ec_render( '[eventcrawler_events title=""]' ), 'eventcrawler-section-title' ), true );
+	ec_check( 'Titel als Überschrift', false !== strpos( $card( $a ), '<h4 class="eventcrawler-event__title">Konzert A</h4>' ), true );
+	ec_check( 'Uhrzeit mit <time datetime>', false !== strpos( $card( $a ), '<time datetime="' . $d1 . 'T18:30">18:30–22:00 Uhr</time>' ), true );
+	ec_check( 'ohne Uhrzeit kein leeres Zeitfeld', false === strpos( $card( $b ), 'eventcrawler-event__time' ) && '' !== $card( $b ), true );
+	ec_check( 'ohne Uhrzeit kein "Uhrzeit"-Feld in Details', false === strpos( $card( $b ), '<dt>Uhrzeit</dt>' ), true );
+	ec_check( 'ganztägig nur bei all_day', array( false !== strpos( $card( $d ), 'ganztägig' ), false !== strpos( $card( $b ), 'ganztägig' ) ), array( true, false ) );
+	ec_check( 'ohne Ort/Adresse nur Stadt, keine leeren Trenner', false === strpos( $card( $b ), 'eventcrawler-event__venue' ) && false !== strpos( $card( $b ), '<p class="eventcrawler-event__address">Bayreuth</p>' ) && false === strpos( $card( $b ), ', <' ), true );
+	ec_check( 'Details anzeigen/schließen', false !== strpos( $card( $a ), 'Details anzeigen' ) && false !== strpos( $card( $a ), 'Details schließen' ) && false !== strpos( $card( $a ), '<details class="eventcrawler-event__more">' ), true );
+	ec_check( 'Link "Zur Veranstaltungsseite" neues Fenster, noopener', 1 === preg_match( '#<a class="eventcrawler-button eventcrawler-button--secondary" href="https://example\.org/a" target="_blank" rel="noopener noreferrer">Zur Veranstaltungsseite#', $card( $a ) ), true );
+	ec_check( 'ohne sicheren Link kein Linkbereich', false === strpos( $card( $f ), 'eventcrawler-event__links' ), true );
+	ec_check( 'ohne Beschreibung kein Beschreibungsblock', false === strpos( $card( $d ), 'eventcrawler-event__description' ), true );
+	ec_check( 'Quelle nicht öffentlich', false === strpos( $card( $b ), 'coburg' ) && false === stripos( $html, 'source' ), true );
+	ec_check( 'Filter: Labels, Platzhalter, Buttons', false !== strpos( $html, '>Suche</label>' ) && false !== strpos( $html, '>Stadt</label>' ) && false !== strpos( $html, 'placeholder="Titel, Ort oder Stadt …"' ) && false !== strpos( $html, '>Anzeigen</button>' ) && false !== strpos( $html, '>Zurücksetzen</a>' ), true );
+	ec_check( 'Monatsübersicht deutsch', false !== strpos( $html, 'Monatsübersicht</summary>' ), true );
+	$english = array( 'Event-Calendar', 'Event-List', '>Search', '>City', '>Reset', 'Previous', 'Next day', 'Month overview', 'more<', 'Details<' );
+	$found   = array();
+	foreach ( array( $html, ec_render( '[eventcrawler_events view="day"]', array( 'date' => $d2 ) ), $cal ) as $out ) {
+		foreach ( $english as $word ) {
+			if ( false !== stripos( $out, $word ) ) {
+				$found[] = $word;
+			}
+		}
+	}
+	ec_check( 'keine englischen UI-Texte', $found, array() );
+	$found = ec_render( '[eventcrawler_events]', array( 'ec_search' => 'Serie' ) );
+	ec_check( 'Suchergebnis: "n Veranstaltungen gefunden"', false !== strpos( $found, '25 Veranstaltungen gefunden' ), true );
+	$none = ec_render( '[eventcrawler_events]', array( 'ec_search' => 'gibtsnichtxyz' ) );
+	ec_check( 'leere Suche: Hinweis und Filter zurücksetzen', false !== strpos( $none, 'Für Ihre Suche wurden keine Veranstaltungen gefunden.' ) && false !== strpos( $none, 'Filter zurücksetzen</a>' ), true );
+	$pages = ec_render( '[eventcrawler_events per_page="5"]', array( 'ec_page' => '3' ) );
+	ec_check( 'Pagination: aktuelle Seite aria-current', false !== strpos( $pages, 'aria-current="page"><span class="eventcrawler-sr-only">Seite </span>3</span>' ), true );
+	ec_check( 'Pagination: 1 2 3 4 … 7 mit Zurück/Weiter', array( preg_match_all( '/eventcrawler-pagination__page[ "]/', $pages ), substr_count( $pages, 'eventcrawler-pagination__gap' ), false !== strpos( $pages, 'Zurück</a>' ) && false !== strpos( $pages, 'Weiter' ) ), array( 5, 1, true ) );
+	ec_check( 'Pagination: "Seite 3 von 7" für schmale Bildschirme', false !== strpos( $pages, 'Seite 3 von 7' ), true );
+	$day_html = ec_render( '[eventcrawler_events view="day"]', array( 'date' => $d2 ) );
+	ec_check( 'Tagesnavigation: Datum als Überschrift, Vor/Zurück', false !== strpos( $day_html, '<h3 class="eventcrawler-day-nav__current">' . Eventcrawler_Frontend::format_day( $d2 ) . '</h3>' ) && false !== strpos( $day_html, 'Vorheriger Tag</a>' ) && false !== strpos( $day_html, 'Nächster Tag<svg' ), true );
+	$two = ec_render( '[eventcrawler_events][eventcrawler_events]' );
+	ec_check( 'Kalender über der Liste: keine zweite Monatsübersicht', array( substr_count( ec_render( '[eventcrawler_calendar][eventcrawler_events view="day"]', array( 'ec_month' => $month ) ), 'class="eventcrawler-calendar"' ), substr_count( ec_render( '[eventcrawler_events view="day"]', array( 'ec_month' => $month ) ), 'class="eventcrawler-calendar"' ) ), array( 1, 1 ) );
+	preg_match_all( '/id="(eventcrawler-search[^"]*)"/', $two, $two_ids );
+	ec_check( 'zwei Listen: eindeutige Feld-IDs', array( count( $two_ids[1] ), count( array_unique( $two_ids[1] ) ) ), array( 2, 2 ) );
+	$css = (string) file_get_contents( EVENTCRAWLER_PATH . 'assets/eventcrawler-frontend.css' );
+	$css = preg_replace( '#/\*.*?\*/#s', '', $css );
+	preg_match_all( '#(?:^|})\s*([^{}@]+?)\s*\{#', preg_replace( '#@media[^{]+\{#', '}', $css ), $sel_m );
+	$global = array();
+	foreach ( $sel_m[1] as $group ) {
+		foreach ( explode( ',', $group ) as $selector ) {
+			if ( 0 !== strpos( trim( $selector ), '.eventcrawler' ) ) {
+				$global[] = trim( $selector );
+			}
+		}
+	}
+	ec_check( 'CSS: alle Selektoren unter .eventcrawler', array_values( array_diff( $global, array( '' ) ) ), array() );
+	ec_check( 'CSS: !important nur bei reduzierter Bewegung', substr_count( $css, '!important' ), 1 );
 
 	echo "WPEM-Aliase\n";
 	$wpem_active = post_type_exists( 'wpem_event' ) && class_exists( 'WPEM_Frontend' );
