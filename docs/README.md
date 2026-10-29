@@ -132,6 +132,9 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   - **Zuverlässigkeit (2026-10-29):** Kundenmeldung „keine Ergebnisse“ nach einmaligem Abbruch beim Verbindungsaufbau
     (cURL 28 nach 10 s); nicht reproduzierbar, API unverändert (69 Termine). Genau ein Retry nur bei Zeitüberschreitung,
     nur in diesem Adapter (A102); „Alle Quellen“ 11 von 11 in 389 s (03-crawler.md Abschnitt 24)
+  - **Kundensystem (2026-10-29):** dort keine Verbindung (auch nicht beim Retry). Der Server von DAS ZENTRUM verwirft
+    Verbindungen aus Rechenzentrumsnetzen; privat erreichbar. Entscheidung A/B/C offen (04-quellen.md Abschnitt 5
+    „Erreichbarkeit aus Rechenzentrumsnetzen“, todo.md)
 - **Sechste aktive Quelle Schützenhaus Münchberg (2026-10-15):** erledigt und getestet (siehe [04-quellen.md](04-quellen.md) Abschnitt 9):
   - Zugriff mit dem Plugin-User-Agent geprüft (200); WordPress/Elementor, eine Programmseite (1 Abruf, ~6 s)
   - Matching über Post-ID + laufende Nummer; Verschiebungen werden als UPDATE erkannt
@@ -280,6 +283,14 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 - Parsertests Concertbüro Franken (eingebettete HTML-Ausschnitte, keine HTTP-Abrufe, keine DB-Änderung):
   ```
   C:\xampp\php\php.exe tools\test-concertbuero-franken.php <pfad\zu\wp-load.php>
+  ```
+- Verbindungsdiagnose DAS ZENTRUM für den Kundenserver (DNS, IPv4/IPv6, TCP 80/443, PHP-cURL, `wp_remote_get`,
+  curl-Kommandozeile, ausgehende IP; nur lesend). Ohne Shell: vorübergehend neben `wp-load.php` ablegen, als Admin im
+  Browser öffnen, danach löschen. Im Browser nur für angemeldete Benutzer mit `manage_options`, sonst HTTP 403 (auch
+  ohne `wp-load.php` daneben); `noindex`, `nosniff`, kein Caching. Ausgegeben werden nur Messwerte zu den Zielhosts und die
+  öffentliche ausgehende IP – keine Header, Cookies, Pfade, internen Adressen oder Konfigurationswerte:
+  ```
+  C:\xampp\php\php.exe tools\diagnose-connection.php <pfad\zu\wp-load.php>
   ```
 - Tests Frontend, manuelle Termine und WPEM-Übernahme (alle Änderungen in einer Transaktion mit Rollback, Prüfsumme
   der Tabelle vorher/nachher; legt bei Bedarf CPT/Taxonomie von WPEM nur im Testprozess an):

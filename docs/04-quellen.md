@@ -828,8 +828,50 @@ unverändert. Ungünstigster Fall je Seite: 10 s + 2 s + 10 s.
 „Alle Quellen“ danach: 11 von 11 erfolgreich (389 s), DAS ZENTRUM 69 unverändert in 7,9 s ohne Retry; 0 Termine von
 Bayreuth Tourismus am Ort DAS ZENTRUM; XML ohne Dubletten (03-crawler.md Abschnitt 24).
 
-Ergebnis: Quelle wieder betriebsbereit; Primärquelle bleibt die API, Bayreuth Tourismus wird **nicht** als Ersatz
+Ergebnis: Quelle **aus der lokalen Umgebung** betriebsbereit; auf dem Kundensystem nicht (siehe „Erreichbarkeit aus
+Rechenzentrumsnetzen“). Primärquelle bleibt die API, Bayreuth Tourismus wird **nicht** als Ersatz
 verwendet (A91 unverändert).
+
+### Erreichbarkeit aus Rechenzentrumsnetzen (2026-10-29, nach Rückmeldung vom Kundensystem)
+
+**Kundensystem:** reproduzierbar „Zeitüberschreitung auch beim zweiten Versuch. Quelle nicht erreichbar: cURL error 28:
+Connection timed out after 10004 milliseconds“ (~22 s = 10 s + 2 s Pause + 10 s). Der Retry (A102) arbeitet wie
+vorgesehen, hilft dort aber nicht: Es kommt **keine TCP-Verbindung** zustande. Ein direkter Test auf dem Kundenserver
+steht aus (kein Zugang); Werkzeug dafür: `tools/diagnose-connection.php`.
+
+**DNS (lokal, Google 8.8.8.8, Cloudflare 1.1.1.1 identisch):** `www.das-zentrum.de` und `das-zentrum.de` → nur
+**A 91.233.84.81**, **kein AAAA**, kein CNAME; Nameserver `ns19/ns20.domaincontrol.com`. IPv6 scheidet damit als Ursache
+aus (`curl -6`: Host nicht auflösbar; `curl -4`: 200). Netz 91.233.84.0/22 = **1blu** (RIPE, DE).
+
+**TCP-Erreichbarkeit von außen** (öffentliche Prüfknoten check-host.net, alle in Rechenzentren; übermittelt wurde
+nur der öffentliche Hostname):
+
+| Ziel | Rechenzentren DE (Frankfurt, Langen), AT, CH, NL (6) | weltweit (15 Knoten) | lokal (privater DSL-Anschluss) |
+|---|---|---|---|
+| www.das-zentrum.de:443 | **6 × Connection timed out** | 13 × timed out, 1 ok (Knoten im Cloudflare-Netz AS13335), 1 ohne verwertbares Ergebnis | offen, 12 ms |
+| www.das-zentrum.de:80 | **6 × Connection timed out** | – | offen |
+| api.region-bayreuth.de:443 (Vergleich) | 6 × ok, 16–71 ms | – | offen |
+
+**Befund:** Der Server von DAS ZENTRUM verwirft Verbindungsversuche aus Rechenzentrumsnetzen auf Port 80 und 443
+(keine Abweisung, sondern Stille → Connect-Timeout), aus einem privaten Anschluss ist er sofort erreichbar. Dasselbe
+Bild wie auf dem Kundenserver. Die Sperre liegt damit **beim Ziel** (Firewall des Servers oder des Hosters 1blu), nicht
+im Plugin, nicht in DNS/IPv6 und nach den Vergleichswerten auch nicht beim Kundenhoster (andere Quellen laufen dort).
+Ob sie gezielt eingerichtet ist, ist nicht belegt.
+
+**Konsequenz:** Aus der Umgebung des Kunden ist die Primärquelle derzeit **nicht nutzbar**. Mehr Retries oder längere
+Timeouts ändern daran nichts. Eine Umgehung (Proxy, fremde IP, Abruf über Dritte) wird nicht gebaut (A85 sinngemäß).
+Vorhandene Termine bleiben bei jedem Lauf unverändert. Bayreuth Tourismus wird **nicht** automatisch als Ersatz
+geschaltet; der Ausschluss des Orts DAS ZENTRUM dort (A91) bleibt, bis entschieden ist (todo.md).
+
+Optionen (Entscheidung offen):
+
+- **A)** Betreiber von DAS ZENTRUM bitten, die ausgehende IP des Kundenservers freizugeben (Ausgabe von
+  `tools/diagnose-connection.php`). Saubere Lösung, Adapter unverändert.
+- **B)** Bayreuth Tourismus als Quelle für den Ort DAS ZENTRUM: A91 aufheben. Dort fehlen Termine bzw. weichen Zeiten
+  ab (siehe „DAS ZENTRUM vs. Bayreuth Tourismus“); die vorhandenen DAS-ZENTRUM-Datensätze blieben daneben stehen →
+  Doppelungen, bis sie bereinigt sind.
+- **C)** Quelle zurückstellen (wie Neustadt, Kulmbach, Hof): Termine bleiben gespeichert, werden aber nicht mehr
+  aktualisiert.
 
 ## 6. Neustadt bei Coburg
 

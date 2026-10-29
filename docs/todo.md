@@ -274,8 +274,14 @@ Details, Funktionsmatrix, Entscheidungen E1–E10 und Abschaltplan: [10-frontend
       (cURL 28 nach 10 s = `connect_timeout` von Requests); nicht reproduzierbar (14/14 Abrufe ~1,1 s), API unverändert
       (69 Termine, 2 Seiten, Ort-ID 60 weiter ohne Stadt). Reparatur A102: genau ein Retry nur bei Zeitüberschreitung;
       65 Tests, 3 Einzelcrawls, „Alle Quellen“ 11/11 → 04-quellen.md Abschnitt 5 „Zuverlässigkeit“, 03-crawler.md Abschnitt 24
-- [ ] Beobachten: Tritt die Zeitüberschreitung trotz Retry erneut auf (Debug-Log „Versuch 2/2“), Erreichbarkeit beim
-      Betreiber klären; Bayreuth Tourismus erst nach ausdrücklicher Entscheidung als Ersatz (A91)
+- [x] Kundensystem 2026-10-29: Zeitüberschreitung auch beim zweiten Versuch. Ursache eingegrenzt: das-zentrum.de (1blu,
+      nur IPv4, kein AAAA) verwirft TCP 80/443 aus Rechenzentrumsnetzen (6/6 Knoten DE/AT/CH/NL), privat erreichbar,
+      Vergleichsziel überall erreichbar → 04-quellen.md Abschnitt 5 „Erreichbarkeit aus Rechenzentrumsnetzen“
+- [ ] **Kundenserver:** `tools/diagnose-connection.php` dort ausführen (CLI oder als Admin im Browser, danach löschen)
+      und Ausgabe ablegen – bestätigt den Befund und liefert die ausgehende IP
+- [ ] **Entscheidung Kunde:** A) Freigabe der Server-IP beim Betreiber anfragen, B) Bayreuth Tourismus für den Ort
+      DAS ZENTRUM (A91 aufheben), C) Quelle zurückstellen. Bis dahin keine automatische Umschaltung
+- [ ] Nach der Entscheidung: Retry aus A102 behalten oder entfernen (bei dauerhafter Sperre kostet er je Lauf 12 s)
 
 ## Sechste aktive Quelle: Schützenhaus Münchberg (2026-10-15)
 
