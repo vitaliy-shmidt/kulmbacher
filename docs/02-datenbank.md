@@ -37,7 +37,7 @@
 | Feld | Typ | Null | Beschreibung |
 |---|---|---|---|
 | `id` | `BIGINT(20) UNSIGNED AUTO_INCREMENT` | nein | Primärschlüssel |
-| `source` | `VARCHAR(50)` | nein | Slug des Source Adapters, z. B. `burg-rabenstein`. `dev-test` ist für Entwickler-Testdaten reserviert. **`manual`** = manuell gepflegter Termin (seit 2026-10-28, kein Adapter, wird nie gecrawlt, 10-frontend.md) |
+| `source` | `VARCHAR(50)` | nein | Slug des Source Adapters, z. B. `burg-rabenstein`. `dev-test` ist für Entwickler-Testdaten reserviert. **`manual`** = manuell gepflegter Termin (seit 2026-10-28, kein Adapter, wird nie gecrawlt, 10-frontend.md). **Importquelle** (seit 2026-11-03), z. B. `kulturamt-kulmbach`: Termine aus einem Dateiimport, Kennung vom Admin festgelegt, nie ein Crawler-Slug oder `manual` (11-import.md) |
 | `external_id` | `VARCHAR(191)` | ja | stabile Event-ID der Quelle, falls vorhanden |
 | `event_key` | `CHAR(40)` | nein | technischer Hilfsschlüssel (SHA-1) für das Fallback-Matching, Abschnitt 4. **Nicht eindeutig** |
 | `title` | `VARCHAR(255)` | nein | Titel (Klartext) |

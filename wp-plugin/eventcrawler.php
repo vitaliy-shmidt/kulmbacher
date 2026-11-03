@@ -26,6 +26,7 @@ require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-domain-mappings.ph
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-exporter.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-manual-events.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-wpem-migration.php';
+require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-importer.php';
 require_once EVENTCRAWLER_PATH . 'includes/frontend/class-eventcrawler-frontend.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/abstract-eventcrawler-source.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-burg-rabenstein.php';
@@ -58,5 +59,6 @@ if ( is_admin() ) {
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-event-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-wpem-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-settings-admin.php';
+	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-import-admin.php';
 	Eventcrawler_Admin::init();
 }

@@ -62,6 +62,7 @@ class Eventcrawler_Admin {
 		Eventcrawler_Event_Admin::init();
 		Eventcrawler_Wpem_Admin::init();
 		Eventcrawler_Settings_Admin::init();
+		Eventcrawler_Import_Admin::init();
 	}
 
 	/**
@@ -84,7 +85,14 @@ class Eventcrawler_Admin {
 	 * @return string[]
 	 */
 	public static function filter_source_options() {
-		return self::source_options() + array( Eventcrawler_Manual_Events::SOURCE => Eventcrawler_Manual_Events::NAME );
+		$options = self::source_options() + array( Eventcrawler_Manual_Events::SOURCE => Eventcrawler_Manual_Events::NAME );
+		// Importquellen (docs/11-import.md): ebenfalls kein Adapter, erscheinen nur in Liste und Export.
+		foreach ( Eventcrawler_Importer::import_sources() as $slug => $data ) {
+			if ( ! isset( $options[ $slug ] ) ) {
+				$options[ $slug ] = $data['label'] . ' (Import)';
+			}
+		}
+		return $options;
 	}
 
 	/**
@@ -401,6 +409,7 @@ class Eventcrawler_Admin {
 		Eventcrawler_Filter_Admin::register_menu();
 		Eventcrawler_Domain_Admin::register_menu();
 		Eventcrawler_Wpem_Admin::register_menu();
+		Eventcrawler_Import_Admin::register_menu();
 		Eventcrawler_Settings_Admin::register_menu();
 	}
 

@@ -364,7 +364,7 @@ aus (`NOT (… LIKE …)` mit NULL), jetzt `external_id IS NOT NULL AND …`.
 |---|---|---|
 | E1 | Auf welchen Seiten der Kundenwebsite stehen `[events_list]` / `[events_calendar]` (oder werden sie im Theme per `do_shortcode` genutzt)? | Ohne Zugriff auf die Kundeninstallation nicht prüfbar. Die Alias-Shortcodes decken beide Fälle ab, der Paralleltest muss auf dem Kundensystem laufen |
 | E2 | Sind `/veranstaltung/{slug}/` und `/veranstaltungsort/{slug}/` indexiert oder extern verlinkt (Search Console, Backlinks)? | entscheidet, ob die Redirects aus Abschnitt 11 gebaut werden |
-| E3 | Nutzt die Redaktion den CSV-/XML-**Import** von WPEM? Woher kommen die Dateien? | Falls ja, braucht der Eventcrawler vor der Abschaltung eine Importfunktion (nicht gebaut) |
+| E3 | Nutzt die Redaktion den CSV-/XML-**Import** von WPEM? Woher kommen die Dateien? | **Seit 2026-11-03 gebaut** (11-import.md): CSV mit Feldzuordnung und neutrales XML. Offen bleibt, ob das Dateiformat der Redaktion damit passt (Testdatei vom Kunden) |
 | E4 | Wird der CSV-Export genutzt? | nicht gebaut |
 | E5 | Sollen öffentlich **alle** Quellen erscheinen oder nur manuelle Termine (bisheriger WPEM-Inhalt) bzw. eine Auswahl? | Shortcode-Attribut `sources` ist vorhanden; Standard: alle |
 | E6 | Wird die PLZ der Orte gebraucht? | kein Feld im Schema; bräuchte Schema-Version 4 |

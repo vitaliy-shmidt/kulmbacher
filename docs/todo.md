@@ -6,6 +6,9 @@ Stand: 2026-10-29 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme; Gestaltu
 
 - [x] Parallelbetrieb: keine automatische Übernahme von `[events_list]`/`[events_calendar]`, Option „WPEM-Shortcodes
       übernehmen“ (Standard aus), Frontend-Testseite als Entwurf per Klick (A103, 10-frontend.md Abschnitt 15)
+- [x] CSV-/XML-Import in die Eventcrawler-Tabelle mit Mapping, Probelauf, idempotentem Matching, verständlichen
+      Fehlern, XXE-Schutz (A104, 11-import.md)
+- [ ] **Kunde:** echte Importdatei der Redaktion testen (Spaltennamen, Datumsformat, Zeichensatz)
 
 ## WPEM-Ersatz (2026-10-28) ← NÄCHSTER SCHRITT
 

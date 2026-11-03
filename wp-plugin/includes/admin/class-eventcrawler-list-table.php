@@ -169,7 +169,7 @@ class Eventcrawler_List_Table extends WP_List_Table {
 
 	protected function column_source( $item ) {
 		// Anzeigename; der gespeicherte Slug bleibt unverändert.
-		return esc_html( Eventcrawler_Crawler::get_source_name( $item['source'] ) );
+		return esc_html( Eventcrawler_Importer::source_name( $item['source'] ) );
 	}
 
 	protected function column_last_seen_at( $item ) {

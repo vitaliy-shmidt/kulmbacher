@@ -46,6 +46,10 @@ Quelle (Website)
   -> INSERT oder UPDATE oder nur last_seen_at aktualisieren
   -> Datenbank ({prefix}eventcrawler_events)
 
+Importdatei CSV/XML (Eventcrawler → Import, Probelauf vor dem Schreiben)
+  -> Normalisierung (dieselben Regeln) -> Matching source + external_id bzw. event_key
+  -> Datenbank (source = Importquelle; keine Filterregeln, nie Löschen)
+
 Redaktion (Formular „Veranstaltung hinzufügen“) bzw. WPEM-Bestand (einmalige Übernahme)
   -> Normalisierung (dieselben Regeln, Eventcrawler_Manual_Events::prepare())
   -> Datenbank (source = manual; keine Filterregeln)
@@ -68,6 +72,7 @@ Datenbank
 | Admin | Menüseite, Liste (`WP_List_Table`) mit read-only Detail-Modal, Buttons „Crawler starten“ / „XML exportieren“, Löschen, Unterseiten „Filterregeln“ und „Link-Bezeichnungen“ | [06-admin.md](06-admin.md) |
 | Exporter | XML im bestehenden Minimalformat erzeugen und als Download ausliefern | [07-export.md](07-export.md) |
 | Manuelle Termine | Formular, Normalisierung, Speicherung (`source = manual`) | [06-admin.md](06-admin.md), [10-frontend.md](10-frontend.md) |
+| Dateiimport | CSV/XML lesen, zuordnen, Probelauf, idempotenter Import unter einer Importquelle | [11-import.md](11-import.md) |
 | WPEM-Übernahme | einmaliger, idempotenter Import des WP-Kulmbacher-Land-Bestands mit Probelauf | [10-frontend.md](10-frontend.md) |
 | Frontend | öffentliche Liste, Tagesansicht, Kalender per Shortcode, Aliase für die WPEM-Shortcodes | [10-frontend.md](10-frontend.md) |
 
@@ -89,6 +94,8 @@ wp-plugin/                                  (Plugin-Root, in WP als wp-content/p
     class-eventcrawler-exporter.php      ✅ XML-Export: Gruppierung, deutsches Datum, <p>-Text (Textregeln, sichtbare URL/Link-Bezeichnung), XMLWriter, Prüfung
     class-eventcrawler-manual-events.php ✅ manuelle Termine (source = manual): Normalisierung, Speichern (seit 2026-10-28)
     class-eventcrawler-wpem-migration.php ✅ einmalige WPEM-Übernahme: Probelauf, Dubletten, idempotente Übernahme
+    class-eventcrawler-settings.php      ✅ Einstellungen (Option eventcrawler_settings), Parallelbetrieb, Testseite (seit 2026-11-03)
+    class-eventcrawler-importer.php      ✅ CSV-/XML-Import: Lesen, Mapping, Prüfung, Probelauf, Import (seit 2026-11-03)
     frontend/
       class-eventcrawler-frontend.php    ✅ Shortcodes Liste/Tagesansicht/Kalender, WPEM-Aliase (seit 2026-10-28)
     admin/
@@ -98,6 +105,8 @@ wp-plugin/                                  (Plugin-Root, in WP als wp-content/p
       class-eventcrawler-domain-admin.php ✅ Untermenü „Link-Bezeichnungen“
       class-eventcrawler-event-admin.php ✅ Untermenü „Veranstaltung hinzufügen“ (anlegen, bearbeiten, duplizieren)
       class-eventcrawler-wpem-admin.php  ✅ Untermenü „WPEM-Übernahme“ (Probelauf, Übernahme)
+      class-eventcrawler-settings-admin.php ✅ Untermenü „Einstellungen“ (WPEM-Kompatibilität, Testseite)
+      class-eventcrawler-import-admin.php ✅ Untermenü „Import“ (Datei, Zuordnung, Probelauf, Ergebnis)
     sources/
       abstract-eventcrawler-source.php   ✅ Basis der Adapter (HTTP-Abruf, UTF-8-Absicherung, DOM/XPath, Textbereinigung, URLs)
       class-eventcrawler-source-burg-rabenstein.php ✅ Adapter Burg Rabenstein
@@ -130,6 +139,9 @@ tools/                                      (außerhalb des Plugins, wird nicht 
   test-bayreuth-tourismus.php            ✅ Entwickler-Tests: Parser Bayreuth Tourismus mit eingebetteten JSON-Antworten (CLI)
   test-concertbuero-franken.php          ✅ Entwickler-Tests: Parser Concertbüro Franken mit eingebetteten HTML-Ausschnitten (CLI)
   test-frontend.php                      ✅ Entwickler-Tests: Frontend, manuelle Termine, WPEM-Übernahme (CLI, Rollback)
+  lib-test.php                           ✅ gemeinsame Helfer der neuen Suites (wp_die/Redirect abfangen, Testbenutzer)
+  test-parallel.php                      ✅ Entwickler-Tests: Parallelbetrieb WPEM, Einstellungen, Testseite (CLI, Rollback)
+  test-import.php                        ✅ Entwickler-Tests: CSV-/XML-Import inkl. XXE und Handler (CLI, Rollback)
 ```
 
 - Keine Namespaces, Interfaces, Factories oder Service Container. Klassen mit dem Präfix `Eventcrawler_` genügen für
@@ -263,4 +275,5 @@ Diese Punkte werden jetzt nicht gebaut. Sie sind nur als mögliche spätere Erwe
 | A100 | 2026-10-28 | Öffentlich nur `PUBLIC_COLUMNS` (ohne `external_id`, `event_key`, `content_hash`, `source_url`, Zeitstempel); Beschreibung nur bei manuellen Terminen (Filter `eventcrawler_frontend_show_description`); Links nur http/https; keine Bilder | Freigabe der Fremdtexte ist offen; keine internen Daten nach außen |
 | A101 | 2026-10-28 | Keine eigene Detail-URL je Termin; alte WPEM-URLs werden erst beim Abschalten (Phase F) per 301 umgeleitet, falls nötig (E2) | WPEM-Detailseiten zeigen weder Datum noch Ort; indexierbare Seiten mit Fremdtexten wären rechtlich ungeklärt |
 | A103 | 2026-11-03 | **Parallelbetrieb ist der Standard; keine automatische Übernahme der WPEM-Shortcodes.** `[events_list]`/`[events_calendar]` registriert der Eventcrawler nur, wenn die Einstellung „WPEM-Shortcodes übernehmen“ (Option `eventcrawler_settings[wpem_aliases]`, Standard **aus**) ausdrücklich aktiviert ist **und** WPEM nicht aktiv ist (Konstante `WPEM_VERSION` bzw. Klasse `WPEM_Frontend`) **und** die Namen frei sind. Das Deaktivieren von WPEM allein schaltet nichts um. Eigene Shortcodes `[eventcrawler_events]`/`[eventcrawler_calendar]` gelten immer. Die Frontend-Testseite entsteht nur per Admin-Klick als **Entwurf**, bestehende Seiten werden nie verändert | Eventcrawler soll beim Kunden installiert und getestet werden können, ohne dass sich eine bestehende Seite ändert – auch nicht, wenn WPEM vorübergehend deaktiviert wird (ersetzt A99) |
+| A104 | 2026-11-03 | **Dateiimport (CSV/XML) schreibt ausschließlich in `{prefix}eventcrawler_events`, unter einer vom Admin festgelegten Importquelle (`source`).** Die Kennung darf weder `manual`/`dev-test` noch ein Crawler-Slug sein (Option `eventcrawler_import_sources`). Matching nur deterministisch: `source + external_id`, ohne ID der `event_key` unter ID-losen Terminen derselben Quelle; doppelte `external_id` in einer Datei → alle betroffenen Zeilen fehlerhaft. Immer Probelauf vor dem Import; unveränderte Termine werden nicht geschrieben, fehlende nie gelöscht. CSV nur UTF-8, Trennzeichen deterministisch erkannt oder vom Admin gewählt; XML im neutralen Format `<events>/<event>`, DOCTYPE/ENTITY abgelehnt. Keine Schemaänderung, kein XLSX (docs/11-import.md) | Ersatz für den Dateiimport von WPEM (E3) ohne zweite Datenhaltung; Import, Crawler und manuelle Termine können sich nicht gegenseitig überschreiben; keine Vermutungen über Daten (A66) |
 | A102 | 2026-10-29 | **Wiederholungsversuch nur source-spezifisch und nur bei Zeitüberschreitung:** DAS ZENTRUM wiederholt einen API-Abruf, der mit `cURL error 28`/„timed out“ endet, genau **einmal** nach 2 s; kein Retry bei HTTP-Status, leerer Antwort, anderen Netzwerkfehlern oder Strukturfehlern; kein globaler Retry, kein höherer Timeout, Basisklasse unverändert. Hintergrund: `wp_remote_get()` reicht nur `timeout` durch, für den Verbindungsaufbau gilt fest `connect_timeout` = 10 s der Requests-Bibliothek | Belegt: einmaliger Abbruch beim Verbindungsaufbau nach 10 s, danach 14 von 14 Abrufen in ~1,1 s (04-quellen.md Abschnitt 5 „Zuverlässigkeit“). Ein höherer Timeout wirkt nicht auf den Verbindungsaufbau; ein frischer Versuch fängt eine kurze Störung ab, ohne die Laufzeit anderer Quellen zu verändern |

@@ -818,6 +818,7 @@ class Eventcrawler_Frontend {
 		}
 		$known = array_keys( Eventcrawler_Crawler::get_sources() );
 		$known[] = Eventcrawler_Manual_Events::SOURCE;
+		$known   = array_merge( $known, array_keys( Eventcrawler_Importer::import_sources() ) );
 		$valid = array_values( array_intersect( $requested, $known ) );
 		return $valid ? $valid : array( '-' );
 	}

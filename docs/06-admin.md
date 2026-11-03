@@ -468,3 +468,10 @@ Werte in der Option `eventcrawler_settings` (`Eventcrawler_Settings`, feste Defa
   an `admin-post.php`, `manage_options`, Nonce je Aktion im Feld `eventcrawler_settings_nonce`. Ungültige Eingaben →
   Fehlermeldung, nichts gespeichert. Getestet in `tools/test-parallel.php` (Gast/Redakteur/Abonnent 403, GET 405,
   falscher bzw. fremder Nonce 403).
+
+## 15. „Import“ (implementiert 2026-11-03)
+
+Seite **Eventcrawler → Import** (`admin.php?page=eventcrawler-import`), Klasse `Eventcrawler_Import_Admin`. Ablauf,
+Formate, Regeln und Sicherheit: [11-import.md](11-import.md) (Abschnitte 6 und 7). Die Listenspalte „Quelle“, der
+Listen- und Exportfilter zeigen Importquellen mit ihrer Bezeichnung („… (Import)“); importierte Termine haben in der
+Spalte „Aktionen“ kein „Bearbeiten“ (nur manuelle Termine).
