@@ -33,6 +33,7 @@ class Eventcrawler_Repository {
 		'city'         => '%s',
 		'event_url'    => '%s',
 		'source_url'   => '%s',
+		'slug'         => '%s',
 		'content_hash' => '%s',
 		'created_at'   => '%s',
 		'updated_at'   => '%s',
@@ -48,7 +49,7 @@ class Eventcrawler_Repository {
 	 * Spalten für das öffentliche Frontend (docs/10-frontend.md): keine internen Felder wie external_id, event_key,
 	 * content_hash, source_url oder Zeitstempel.
 	 */
-	const PUBLIC_COLUMNS = 'id, source, title, description, start_date, start_time, end_date, end_time, all_day, venue_name, venue_address, city, event_url';
+	const PUBLIC_COLUMNS = 'id, source, title, description, start_date, start_time, end_date, end_time, all_day, venue_name, venue_address, city, event_url, slug';
 
 	/**
 	 * Reihenfolge im Frontend: Tag, dann Termine ohne Uhrzeit zuerst (wie die Tagesliste von WPEM), dann Uhrzeit, Titel.
@@ -388,8 +389,111 @@ class Eventcrawler_Repository {
 		$data = $this->filter_columns( $data );
 
 		$result = $this->wpdb->insert( $this->table, $data, $this->formats( $data ) );
+		if ( false === $result ) {
+			return false;
+		}
+		$id = (int) $this->wpdb->insert_id;
+		if ( empty( $data['slug'] ) && isset( $data['title'], $data['start_date'] ) ) {
+			$this->assign_slug( $id, $data['title'], $data['start_date'] );
+		}
+		return $id;
+	}
 
-		return false === $result ? false : (int) $this->wpdb->insert_id;
+	/**
+	 * Dauerhafter URL-Slug eines neuen Termins (docs/12-seo.md Abschnitt 3): "titel-JJJJ-MM-TT", bei Kollision mit der
+	 * ID als stabilem Zusatz. Wird nur beim Anlegen vergeben und danach nie geändert (auch nicht bei Titeländerung).
+	 *
+	 * @param int    $id         Event-ID.
+	 * @param string $title      Titel.
+	 * @param string $start_date Y-m-d.
+	 * @return string Slug.
+	 */
+	public function assign_slug( $id, $title, $start_date ) {
+		$base  = self::slug_base( $title, $start_date );
+		$slug  = $base;
+		$taken = $this->wpdb->get_var( $this->wpdb->prepare( "SELECT id FROM {$this->table} WHERE slug = %s LIMIT 1", $slug ) );
+		if ( null !== $taken && (int) $taken !== (int) $id ) {
+			$slug  = $base . '-' . (int) $id;
+			$taken = $this->wpdb->get_var( $this->wpdb->prepare( "SELECT id FROM {$this->table} WHERE slug = %s LIMIT 1", $slug ) );
+			if ( null !== $taken && (int) $taken !== (int) $id ) {
+				$slug = 'veranstaltung-' . (int) $id;
+			}
+		}
+		$this->wpdb->update( $this->table, array( 'slug' => $slug ), array( 'id' => (int) $id ), array( '%s' ), array( '%d' ) );
+		return $slug;
+	}
+
+	/**
+	 * Slug ohne Kollisionszusatz: Titel in Kleinbuchstaben (ä→ae, ö→oe, ü→ue, ß→ss, Akzente entfernt), alle anderen
+	 * Zeichen als Bindestrich, höchstens 80 Zeichen, dann das Datum. Deterministisch und unabhängig von der Sprache
+	 * der Installation. Beispiel: "Ninotschka", 2026-10-24 → "ninotschka-2026-10-24".
+	 *
+	 * @param string $title      Titel.
+	 * @param string $start_date Y-m-d.
+	 * @return string
+	 */
+	public static function slug_base( $title, $start_date ) {
+		$text = strtr( mb_strtolower( (string) $title, 'UTF-8' ), array( 'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss' ) );
+		$text = strtolower( remove_accents( $text ) );
+		$text = trim( preg_replace( '/[^a-z0-9]+/', '-', $text ), '-' );
+		if ( strlen( $text ) > 80 ) {
+			$text = substr( $text, 0, 80 );
+			$cut  = strrpos( $text, '-' );
+			$text = rtrim( $cut > 40 ? substr( $text, 0, $cut ) : $text, '-' );
+		}
+		if ( '' === $text ) {
+			$text = 'veranstaltung';
+		}
+		return $text . '-' . preg_replace( '/[^0-9-]/', '', (string) $start_date );
+	}
+
+	/**
+	 * Ein Termin für die öffentliche Detailseite (nur PUBLIC_COLUMNS und updated_at), gesucht über den Slug.
+	 *
+	 * @param string $slug Slug.
+	 * @return array|null
+	 */
+	public function get_public_by_slug( $slug ) {
+		return $this->wpdb->get_row(
+			$this->wpdb->prepare( 'SELECT ' . self::PUBLIC_COLUMNS . ", updated_at FROM {$this->table} WHERE slug = %s LIMIT 1", $slug ),
+			ARRAY_A
+		);
+	}
+
+	/**
+	 * Bedingung „ausreichende Daten für eine indexierbare Detailseite“ (docs/12-seo.md Abschnitt 6): Titel, Datum und
+	 * Stadt sind Pflichtfelder der Tabelle; zusätzlich muss Ort oder Adresse vorhanden sein.
+	 */
+	const INDEXABLE_SQL = "slug IS NOT NULL AND ( ( venue_name IS NOT NULL AND venue_name <> '' ) OR ( venue_address IS NOT NULL AND venue_address <> '' ) )";
+
+	/**
+	 * Einträge der Sitemap: indexierbare Termine ab einem Stichtag (Index start_date), nur slug und updated_at.
+	 *
+	 * @param string $from     Y-m-d.
+	 * @param int    $per_page Einträge je Sitemap-Seite.
+	 * @param int    $page     1-basiert.
+	 * @return array[]
+	 */
+	public function get_sitemap_rows( $from, $per_page, $page ) {
+		return $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				"SELECT slug, updated_at FROM {$this->table} WHERE start_date >= %s AND " . self::INDEXABLE_SQL . ' ORDER BY start_date ASC, id ASC LIMIT %d OFFSET %d',
+				$from,
+				max( 1, (int) $per_page ),
+				( max( 1, (int) $page ) - 1 ) * max( 1, (int) $per_page )
+			),
+			ARRAY_A
+		);
+	}
+
+	/**
+	 * @param string $from Y-m-d.
+	 * @return int Anzahl der Sitemap-Einträge.
+	 */
+	public function count_sitemap_rows( $from ) {
+		return (int) $this->wpdb->get_var(
+			$this->wpdb->prepare( "SELECT COUNT(*) FROM {$this->table} WHERE start_date >= %s AND " . self::INDEXABLE_SQL, $from )
+		);
 	}
 
 	/**

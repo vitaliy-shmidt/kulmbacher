@@ -7,6 +7,10 @@
 > **Nachtrag 2026-10-28:** Vollständige Analyse des Plugins und Ersatzplan in [10-frontend.md](10-frontend.md). Seitdem
 > liest der Eventcrawler den WPEM-Bestand einmalig für die Übernahme (nur lesend); das XML-Format bleibt unverändert.
 
+> **Nachtrag 2026-11-03:** Der Eventcrawler hat einen eigenen Dateiimport (CSV mit Feldzuordnung, neutrales XML
+> `<events>/<event>`), der direkt in die Eventcrawler-Tabelle schreibt – nicht über WPEM ([11-import.md](11-import.md)).
+> Das hier beschriebene WPEM-Importformat (`<Root>/<Textabschnitt>`) wird dafür nicht verwendet.
+
 ## 1. Was vorliegt
 
 | | |

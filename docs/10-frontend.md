@@ -230,6 +230,11 @@ nicht zusammengeführt (A66, A84).
 
 ## 11. URL-Strategie
 
+> **Seit 2026-11-03:** Es gibt optionale SEO-Detailseiten `/eventcrawler-veranstaltung/{slug}/` (standardmäßig aus,
+> [12-seo.md](12-seo.md), A106). Sind sie eingeschaltet, verlinkt der Kartentitel der Liste auf die Detailseite; der
+> Anker `#eventcrawler-event-{id}` bleibt. WPEM-URLs werden weiterhin **nicht** umgeleitet (A109). Der folgende Text ist
+> der Stand vom 2026-10-28; die Redirect-Zuordnung steht jetzt in 12-seo.md Abschnitt 10.
+
 - **Keine eigene Detail-URL** je Eventcrawler-Termin in dieser Phase. WPEM hat funktional ebenfalls keine
   Detailseite (Accordion; die CPT-Seite zeigt weder Datum noch Ort). Eigene, indexierbare Seiten für gecrawlte
   Fremdtexte wären außerdem rechtlich ungeklärt (todo.md: Freigabe der Texte) und Duplicate Content der Quellen.

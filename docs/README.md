@@ -20,7 +20,7 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | Entwickler-Werkzeuge (nicht Teil des Plugins) | `C:\xampp\htdocs\kulmbacher\tools` |
 | Kundenplugin „WP Kulmbacher Land“ (nur Referenz, nicht ändern) | `C:\xampp\htdocs\kulmbacher\wp-events-manager`, siehe [09-wpem-integration.md](09-wpem-integration.md) und [10-frontend.md](10-frontend.md) |
 
-## Aktueller Entwicklungsstand (Stand: 2026-10-29)
+## Aktueller Entwicklungsstand (Stand: 2026-11-03)
 
 - **Phase 1 – Dokumentation:** erledigt.
 - **Phase 2 – Plugin-Grundgerüst:** erledigt und in einer WordPress-Testinstallation getestet:
@@ -187,6 +187,16 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
     Tagesnavigation, Seiten, Leerzustand, Accessibility; nur Markup/CSS, alles unter `.eventcrawler` gescopt
     (10-frontend.md „Gestaltung“)
   - **WPEM noch nicht deaktivieren** – offene Punkte und Abschaltplan in 10-frontend.md Abschnitte 13/14
+- **Produktivvorbereitung (2026-11-03):** erledigt und getestet:
+  - **Parallelbetrieb:** WPEM-Shortcodes werden nie automatisch übernommen; Option „WPEM-Shortcodes übernehmen“
+    (Standard aus, wirkt nur ohne WPEM); Frontend-Testseite als Entwurf per Klick (A103, 10-frontend.md Abschnitt 15)
+  - **Import:** CSV/XML mit Feldzuordnung, Probelauf, idempotentem Matching, verständlichen Fehlern, XXE-Schutz
+    (A104, [11-import.md](11-import.md))
+  - **Admin-UX:** Übersicht, Quellen mit Statuskarten, Export, Hilfe, Hilfetexte, deutsche Begriffe, technische
+    Details eingeklappt (A105, 06-admin.md Abschnitte 14–18)
+  - **SEO:** optionale Detailseiten `/eventcrawler-veranstaltung/{slug}/` mit Title, Description, Canonical, Robots,
+    JSON-LD, Sitemap; Schema-Version 4 (`slug`) (A106–A110, [12-seo.md](12-seo.md))
+  - XML-Export bytegleich, Crawler/Adapter/Exporter/Filter unverändert (MD5), 15 Testsuites mit 1065 Tests grün
 - **Noch nicht implementiert:**
   - Export nach frei wählbarem Datumsbereich, Stadt oder Checkbox-Auswahl
   - Listenfilter nach Stadt (derzeit über die Suche)
@@ -208,9 +218,9 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 |---|---|
 | Plugin-Name / Slug | Eventcrawler / `eventcrawler` |
 | Hauptdatei | `wp-plugin/eventcrawler.php` (in WordPress: `wp-content/plugins/eventcrawler/eventcrawler.php`) |
-| Version | 0.2.0, Schema-Version 3 (`EVENTCRAWLER_DB_VERSION`) |
+| Version | 0.3.0, Schema-Version 4 (`EVENTCRAWLER_DB_VERSION`) |
 | Tabelle | `{$wpdb->prefix}eventcrawler_events` |
-| Optionen | `eventcrawler_settings` (Einstellungen: WPEM-Kompatibilität, SEO), `eventcrawler_source_status` (letzter Abruf je Quelle), `eventcrawler_test_page_id` (Frontend-Testseite), `eventcrawler_import_sources` (Importquellen), `eventcrawler_last_import` (letzter Import), `eventcrawler_db_version`, `eventcrawler_filter_rules` (Filterregeln, 05-filter.md), `eventcrawler_filter_rules_version` (Stand der Default-Regeln), `eventcrawler_export_domain_mappings` (Link-Bezeichnungen, 07-export.md Abschnitt 13) |
+| Optionen | `eventcrawler_settings` (Einstellungen: WPEM-Kompatibilität, SEO), `eventcrawler_rewrite_state` (Zustand der Rewrite-Regel der Detailseiten), `eventcrawler_source_status` (letzter Abruf je Quelle), `eventcrawler_test_page_id` (Frontend-Testseite), `eventcrawler_import_sources` (Importquellen), `eventcrawler_last_import` (letzter Import), `eventcrawler_db_version`, `eventcrawler_filter_rules` (Filterregeln, 05-filter.md), `eventcrawler_filter_rules_version` (Stand der Default-Regeln), `eventcrawler_export_domain_mappings` (Link-Bezeichnungen, 07-export.md Abschnitt 13) |
 | Capability | `manage_options` |
 | Admin-Menü / Startseite | „Eventcrawler“ → „Übersicht“ (seit 2026-11-03; vorher „Importierte Veranstaltungen“) |
 | Admin-Seiten | `admin.php?page=` `eventcrawler-overview` (Übersicht), `eventcrawler` (Veranstaltungen, mit Detail-Modal), `eventcrawler-event` (Veranstaltung hinzufügen/bearbeiten), `eventcrawler-import` (Import), `eventcrawler-sources` (Quellen, Abruf), `eventcrawler-filter` (Filterregeln), `eventcrawler-domains` (Link-Bezeichnungen), `eventcrawler-export` (Export), `eventcrawler-settings` (Einstellungen), `eventcrawler-wpem` (WPEM-Übernahme, nur mit WPEM-Daten), `eventcrawler-help` (Hilfe) |
@@ -218,7 +228,8 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | admin-post-Aktionen | `eventcrawler_export`, `eventcrawler_save_event`, `eventcrawler_wpem_migrate`, `eventcrawler_save_settings`, `eventcrawler_create_test_page`, `eventcrawler_import_upload`, `eventcrawler_import_map`, `eventcrawler_import_run` |
 | AJAX-Aktionen | `eventcrawler_crawl_source` (eine Quelle crawlen), `eventcrawler_get_event_details` (gespeicherte Werte eines Events, nur lesend) |
 | Quellen (Slug) | `burg-rabenstein`, `bad-steben`, `coburg`, `theater-selb`, `das-zentrum-bayreuth`, `schuetzenhaus-muenchberg`, `stadtsteinach`, `helmbrechts`, `kronach`, `bayreuth-tourismus`, `concertbuero-franken` |
-| Hooks | `eventcrawler_sources` (Adapter registrieren), `eventcrawler_filter_rules` (aktive Filterregeln zur Laufzeit; ersetzt `eventcrawler_exclude_terms`), `eventcrawler_export_display_url` (sichtbare URL im XML nach Link-Bezeichnung, 07-export.md 10.2/13), `eventcrawler_frontend_show_description` (Beschreibung im Frontend, Standard nur manuelle Termine) |
+| Detailseiten | `/eventcrawler-veranstaltung/{slug}/` (Basis einstellbar), Query-Variable `eventcrawler_event`, Sitemap `wp-sitemap-eventcrawler-1.xml` – nur wenn eingeschaltet (12-seo.md) |
+| Hooks | `eventcrawler_wpem_active` (Erkennung WPEM übersteuern, Tests), `eventcrawler_settings_saved`, `eventcrawler_sources` (Adapter registrieren), `eventcrawler_filter_rules` (aktive Filterregeln zur Laufzeit; ersetzt `eventcrawler_exclude_terms`), `eventcrawler_export_display_url` (sichtbare URL im XML nach Link-Bezeichnung, 07-export.md 10.2/13), `eventcrawler_frontend_show_description` (Beschreibung im Frontend, Standard nur manuelle Termine) |
 | Anforderungen | WordPress ≥ 6.0, PHP ≥ 7.4 (getestet mit WordPress 7.1.2 und 7.1.4, PHP 8.3.12, MariaDB 10.4.32) |
 
 ## Lokale Umgebung und Test
@@ -306,6 +317,11 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
   ```
   C:\xampp\php\php.exe tools\test-admin.php <pfad\zu\wp-load.php>
   ```
+- Tests der SEO-Detailseiten (Teil 1 im Prozess mit Rollback; Teil 2 per HTTP, wenn die Website erreichbar ist –
+  legt Testtermine `dev-test` und eine Testseite an und löscht sie danach, setzt `blog_public` vorübergehend auf 1):
+  ```
+  C:\xampp\php\php.exe tools\test-seo.php <pfad\zu\wp-load.php>
+  ```
 - Tests Frontend, manuelle Termine und WPEM-Übernahme (alle Änderungen in einer Transaktion mit Rollback, Prüfsumme
   der Tabelle vorher/nachher; legt bei Bedarf CPT/Taxonomie von WPEM nur im Testprozess an):
   ```
@@ -327,6 +343,7 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | [09-wpem-integration.md](09-wpem-integration.md) | Kundenplugin „WP Kulmbacher Land“: XML-Export/-Import im Vergleich, Import-Kompatibilität unseres XML |
 | [10-frontend.md](10-frontend.md) | WPEM-Ersatz: Analyse des Kundenplugins, Funktionsmatrix, Frontend, manuelle Termine, Übernahme, URL-Strategie, Abschaltplan |
 | [11-import.md](11-import.md) | Dateiimport CSV/XML: Formate, Mapping, Probelauf, Matching, Idempotenz, Sicherheit |
+| [12-seo.md](12-seo.md) | SEO-Detailseiten: URL im Parallelbetrieb, Slug, Title, Description, Canonical, Robots, JSON-LD, Sitemap, spätere Redirect-Migration |
 | [todo.md](todo.md) | Priorisierte Aufgabenliste / Phasenplan |
 
 ## Wie die Dokumentation verwendet wird

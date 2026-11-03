@@ -219,6 +219,11 @@ class Eventcrawler_List_Table extends WP_List_Table {
 			);
 		}
 
+		$detail_url = Eventcrawler_Seo::url( $item );
+		if ( '' !== $detail_url ) {
+			$links[] = sprintf( '<a href="%s" target="_blank" rel="noopener noreferrer">Detailseite</a>', esc_url( $detail_url ) );
+		}
+
 		if ( ! empty( $item['source_url'] ) ) {
 			$links[] = sprintf(
 				'<a href="%s" target="_blank" rel="noopener noreferrer">Quelle ansehen</a>',

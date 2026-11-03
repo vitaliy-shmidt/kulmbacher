@@ -1,6 +1,7 @@
 # 02 – Datenbank
 
-> **Stand 2026-10-02: Schema-Version 3, implementiert und getestet** (neues Feld `venue_address`, Abschnitt 11).
+> **Stand 2026-11-03: Schema-Version 4** (neues Feld `slug` für SEO-Detailseiten, Abschnitt 12).
+> Version 3 vom 2026-10-02 (neues Feld `venue_address`, Abschnitt 11).
 > Version 2 vom 2026-09-24.
 > - Schema und Migration: `wp-plugin/includes/class-eventcrawler-installer.php`
 > - Zugriffe: `wp-plugin/includes/class-eventcrawler-repository.php`
@@ -52,6 +53,7 @@
 | `city` | `VARCHAR(100)` | nein | Gemeinde/Stadt, z. B. „Ahorntal“, „Nürnberg“. Im XML-Export das `<h2>` |
 | `event_url` | `VARCHAR(2048)` | ja | **Webseiten-Link**: öffentlicher Link zur Veranstaltung, z. B. Detail- oder Ticketseite |
 | `source_url` | `VARCHAR(2048)` | ja | technische Herkunft: die Quellseite, über die der Crawler das Event erkannt hat. Grundlage von Matching-Priorität 2 |
+| `slug` | `VARCHAR(191)` | ja, UNIQUE | **URL-Slug der Detailseite** (seit Version 4): `titel-JJJJ-MM-TT`, bei Kollision `…-{id}`; beim Anlegen vergeben, nie geändert; nicht im `content_hash`, nicht im XML (Abschnitt 12) |
 | `content_hash` | `CHAR(40)` | nein | SHA-1 über die Inhaltsfelder, Abschnitt 5 |
 | `created_at` | `DATETIME` | nein | erster Import |
 | `updated_at` | `DATETIME` | nein | letzte inhaltliche Änderung durch den Crawler |
@@ -87,6 +89,7 @@
 | `start_date` | `start_date, start_time` | INDEX | Liste, Export, später Zeitraumfilter (bis Version 1: `event_date`) |
 | `city` | `city` | INDEX | Filter nach Ort |
 | `last_seen_at` | `last_seen_at` | INDEX | „zuletzt geprüft“ |
+| `slug` | `slug` | **UNIQUE** (seit Version 4) | Detailseite: genau ein Termin je URL; mehrere `NULL` erlaubt |
 
 **Kein UNIQUE-Index auf `event_key` oder `source_url`:** Wiederkehrende Termine dürfen denselben Hilfsschlüssel
 haben, und eine URL kann bei manchen Quellen mehrere Termine bezeichnen. Getestet: Zwei Datensätze mit gleichem
@@ -115,6 +118,7 @@ CREATE TABLE {prefix}eventcrawler_events (
   city varchar(100) NOT NULL,
   event_url varchar(2048) DEFAULT NULL,
   source_url varchar(2048) DEFAULT NULL,
+  slug varchar(191) DEFAULT NULL,
   content_hash char(40) NOT NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
@@ -125,7 +129,8 @@ CREATE TABLE {prefix}eventcrawler_events (
   KEY source_event_key (source,event_key),
   KEY start_date (start_date,start_time),
   KEY city (city),
-  KEY last_seen_at (last_seen_at)
+  KEY last_seen_at (last_seen_at),
+  UNIQUE KEY slug (slug)
 ) {charset_collate};
 ```
 
@@ -329,3 +334,31 @@ Tests (Testinstallation, 1048 Events, Sicherung vorher per `mysqldump`):
 | erneuter Aufruf (Idempotenz) | keine Änderung |
 | Crawl aus dem HTML-Cache danach | Burg Rabenstein 124 unverändert, Bad Steben 557 unverändert (+3 bekannte ohne Stadt), Coburg **341 aktualisiert** (Adresse ergänzt), 24 unverändert; zweiter Lauf 365 unverändert, keine Duplikate |
 | Live-Crawl Coburg (AJAX) | 335 gefunden, 42 neu, 293 unverändert, 0 fehlerhaft; 321 mit Adresse |
+
+## 12. Migration Version 3 → 4 (implementiert und getestet, 2026-11-03)
+
+Anlass: SEO-Detailseiten brauchen eine **stabile** URL je Termin, die sich bei einer Titeländerung nicht ändert.
+Schema 3 hatte dafür kein Feld; die Alternativen (Slug bei jedem Aufruf berechnen, ID in jeder URL, eigene
+Zuordnungs-Option) sind in [12-seo.md](12-seo.md) Abschnitt 3 bewertet. Entscheidung A110.
+
+- Nur eine **neue** Spalte `slug varchar(191) DEFAULT NULL` mit `UNIQUE KEY slug (slug)`, keine Umbenennung → keine
+  Migration vor `dbDelta()`. `upgrade()`: `migrate_to_2()` (ändert nichts) → `create_table()` (dbDelta ergänzt Spalte
+  und Index) → `backfill()` (unverändert) → **`backfill_slugs()`** → Option `eventcrawler_db_version = 4`.
+- `backfill_slugs()` (idempotent): alle Zeilen mit `slug IS NULL` nach `id` aufsteigend; `slug_base()` = Titel +
+  Datum, bei bereits vergebenem Slug `…-{id}`, als letzte Stufe `veranstaltung-{id}`. Vorhandene Slugs bleiben.
+- Neue Termine: `Eventcrawler_Repository::insert()` vergibt den Slug nach dem INSERT (`assign_slug()`, 2 Abfragen),
+  für Crawler, Formular, Import und WPEM-Übernahme gleich; der Crawler-Code ist unverändert. `update()` ändert den
+  Slug nie (er ist in keinem Update-Datensatz enthalten).
+- `slug` ist **nicht** Teil von `content_hash` (kein UPDATE-Auslöser) und erscheint nicht im XML-Export. Im
+  Detail-Modal steht er unter „Technische Informationen“. `Repository::PUBLIC_COLUMNS` enthält `slug` (Teil der
+  öffentlichen URL).
+
+Tests (Testinstallation, 3227 Termine, Sicherung der Tabelle vorher per `mysqldump`):
+
+| Test | Ergebnis |
+|---|---|
+| Migration durch einen Seitenaufruf (Plugin aktiv) | Version 3 → 4 in ca. 1,8 s, Spalte und UNIQUE-Index angelegt |
+| alle Altdaten Feld für Feld (MD5 über alle Spalten außer `slug`, inkl. Zeitstempel und Hash) | identisch |
+| Slugs | 3227 von 3227 vergeben, 3227 eindeutig, 194 mit ID-Zusatz (= Termine mit gleichem Titel am selben Tag) |
+| erneuter Aufruf von `upgrade()` | keine Änderung (`tools/test-seo.php`) |
+| XML-Gesamtexport vor/nach | bytegleich (MD5 `4a79c97a…`) |

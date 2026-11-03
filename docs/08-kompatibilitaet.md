@@ -13,6 +13,11 @@
 > Synchronisation oder ein Schreiben in WPEM gibt es weiterhin nicht. Die Abschnitte unten beschreiben den Stand
 > vor dieser Analyse.
 
+> **Nachtrag 2026-11-03 – Parallelbetrieb:** Der Eventcrawler übernimmt die WPEM-Shortcodes `[events_list]`/
+> `[events_calendar]` nur nach ausdrücklicher Einstellung und nur ohne aktives WPEM (A103); seine optionalen
+> Detailseiten liegen unter `/eventcrawler-veranstaltung/…`, nicht unter WPEMs `/veranstaltung/…` (A106). Siehe
+> [10-frontend.md](10-frontend.md) Abschnitt 15 und [12-seo.md](12-seo.md).
+
 ## Ausgangslage
 
 - Beim Kunden existiert ein **anderes WordPress-Plugin für manuell gepflegte Veranstaltungen**. Es belegt auch den

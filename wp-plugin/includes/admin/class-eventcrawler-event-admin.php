@@ -149,7 +149,7 @@ class Eventcrawler_Event_Admin {
 
 		$title = $id ? 'Veranstaltung bearbeiten' : ( $copy_id ? 'Veranstaltung duplizieren' : 'Veranstaltung hinzufügen' );
 		?>
-		<div class="wrap">
+		<div class="wrap eventcrawler-admin">
 			<h1><?php echo esc_html( $title ); ?></h1>
 			<p class="description">Manuelle Veranstaltung (Quelle „Manuell“). Sie erscheint wie gecrawlte Termine in der Liste, im XML-Export und im Frontend. Felder mit * sind Pflicht.</p>
 			<?php if ( $origin ) : ?>
@@ -158,6 +158,20 @@ class Eventcrawler_Event_Admin {
 			<?php foreach ( $errors as $error ) : ?>
 				<div class="notice notice-error"><p><?php echo esc_html( $error ); ?></p></div>
 			<?php endforeach; ?>
+			<?php if ( $id && ! empty( $row ) ) : ?>
+				<div class="eventcrawler-card">
+					<h2>SEO</h2>
+					<ul class="eventcrawler-checklist">
+						<?php foreach ( Eventcrawler_Seo::checks( $row ) as $check ) : ?>
+							<li class="<?php echo $check['ok'] ? '' : 'is-warning'; ?>"><?php echo esc_html( $check['label'] ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+					<?php $detail_url = Eventcrawler_Seo::url( $row ); ?>
+					<?php if ( '' !== $detail_url ) : ?>
+						<p><a href="<?php echo esc_url( $detail_url ); ?>" target="_blank" rel="noopener noreferrer">Detailseite ansehen</a></p>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>">

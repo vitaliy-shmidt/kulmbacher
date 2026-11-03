@@ -316,6 +316,7 @@ class Eventcrawler_Admin {
 			array(
 				'id'     => (int) $event['id'],
 				'fields' => $fields,
+				'seo'    => Eventcrawler_Seo::checks( $event ), // sachliche Hinweise, keine Punktzahl
 			)
 		);
 	}

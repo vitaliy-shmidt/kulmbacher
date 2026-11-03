@@ -964,3 +964,53 @@
 		transition: none !important;
 	}
 }
+
+/*
+ * Detailseite (docs/12-seo.md Abschnitt 4) und Titel-Link der Karten, nur bei eingeschalteten Detailseiten.
+ */
+.eventcrawler.eventcrawler-detail {
+	box-sizing: border-box;
+	width: auto;
+	max-width: 48rem;
+	margin: 32px auto;
+	padding: 0 16px;
+}
+
+.eventcrawler .eventcrawler-detail__title {
+	margin: 0 0 16px;
+	overflow-wrap: anywhere;
+	font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.25rem);
+	line-height: 1.2;
+	color: var(--ec-text);
+}
+
+.eventcrawler .eventcrawler-detail__past {
+	margin: 0 0 16px;
+	padding: 8px 12px;
+	border-left: 4px solid var(--ec-border-strong);
+	background: var(--ec-bg-muted);
+	color: var(--ec-muted);
+}
+
+.eventcrawler .eventcrawler-detail__facts {
+	margin: 0 0 24px;
+}
+
+.eventcrawler .eventcrawler-detail__description {
+	margin: 0 0 24px;
+}
+
+.eventcrawler .eventcrawler-detail__links {
+	margin: 0;
+}
+
+.eventcrawler .eventcrawler-event__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.eventcrawler .eventcrawler-event__title a:hover,
+.eventcrawler .eventcrawler-event__title a:focus-visible {
+	color: var(--ec-accent);
+	text-decoration: underline;
+}

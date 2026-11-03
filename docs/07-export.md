@@ -857,3 +857,15 @@ Export behandelt sie **genau wie gecrawlte**: gleiche Gruppierung, Sortierung un
   mehr im WPEM-Format (`Titel: Beschreibung Info: https://…`). Ob das für Katharina passt, ist offen (10-frontend.md E8).
 - Regression 2026-10-28: Gesamtexport aller 2562 Termine vor/nach der Änderung **bytegleich**; Export mit Filter
   „Manuell“ getestet (`tools/test-frontend.php`).
+
+## 23. Produktivvorbereitung: Import, Admin, SEO (2026-11-03)
+
+Das Exportformat ist **unverändert** (A8). Neu ist nur, was exportiert werden kann:
+
+- Importierte Termine (11-import.md) stehen wie alle anderen in der Tabelle und werden genauso exportiert; der
+  Exportfilter „Quelle“ bietet Importquellen („… (Import)“).
+- Das Exportformular liegt jetzt auf der Seite „Eventcrawler → Export“ (06-admin.md Abschnitt 17); Aktion, Nonce,
+  Felder und Dateiname sind gleich.
+- Die neue Spalte `slug` (Schema 4) wird nicht exportiert.
+- Regression: Gesamtexport aller 3227 Termine vor Beginn und nach jeder Phase (Parallelbetrieb, Import, Admin, SEO
+  inkl. Schema 4) **bytegleich** (532.023 Byte, MD5 `4a79c97aca93aa92c60fee115cc087f8`); Exporter-Datei unverändert.

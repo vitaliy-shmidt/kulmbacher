@@ -86,6 +86,64 @@ class Eventcrawler_Settings_Admin {
 		exit;
 	}
 
+	/**
+	 * Abschnitt „SEO“ (docs/12-seo.md Abschnitt 8).
+	 *
+	 * @param array $settings Aktuelle Werte.
+	 */
+	private static function render_seo_section( array $settings ) {
+		$example = array(
+			'title'         => 'Ninotschka',
+			'start_date'    => '2026-10-24',
+			'start_time'    => '20:00:00',
+			'end_date'      => null,
+			'end_time'      => null,
+			'all_day'       => 0,
+			'venue_name'    => 'Kreiskulturraum',
+			'venue_address' => 'Siechenanger 1',
+			'city'          => 'Kronach',
+		);
+		?>
+		<div class="eventcrawler-card" id="seo">
+			<h2>SEO – Detailseiten für Suchmaschinen</h2>
+			<p>Jede Veranstaltung kann eine eigene Seite bekommen (Titel, Datum, Uhrzeit, Ort, Adresse, Stadt, Link zur Veranstaltungsseite). Die Seiten von WP Kulmbacher Land bleiben davon unberührt; es gibt keine Weiterleitungen.</p>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">Detailseiten</th>
+					<td><label><input type="checkbox" name="seo_detail_pages" value="1" <?php checked( 1, (int) $settings['seo_detail_pages'] ); ?>> Event-Detailseiten aktivieren</label>
+					<p class="description">Standard: aus. Erst einschalten, wenn die Testseite geprüft ist. Danach verlinken die Titel in der Veranstaltungsliste auf die Detailseite.</p></td>
+				</tr>
+				<tr>
+					<th scope="row">Strukturierte Daten</th>
+					<td><label><input type="checkbox" name="seo_structured_data" value="1" <?php checked( 1, (int) $settings['seo_structured_data'] ); ?>> Event Structured Data (JSON-LD) ausgeben</label></td>
+				</tr>
+				<tr>
+					<th scope="row">Sitemap</th>
+					<td><label><input type="checkbox" name="seo_sitemap" value="1" <?php checked( 1, (int) $settings['seo_sitemap'] ); ?>> Event-Seiten in die WordPress-Sitemap aufnehmen</label></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ec-seo-base">URL-Basis</label></th>
+					<td><code><?php echo esc_html( trailingslashit( home_url() ) ); ?></code><input type="text" id="ec-seo-base" name="seo_base" class="regular-text" maxlength="50" value="<?php echo esc_attr( $settings['seo_base'] ); ?>"><code>/titel-datum/</code>
+					<p class="description">Im Parallelbetrieb nicht „veranstaltung“ (gehört WP Kulmbacher Land). Eine Änderung ändert alle Detail-URLs.</p></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ec-seo-days">Vergangene Veranstaltungen in der Sitemap</label></th>
+					<td><input type="number" id="ec-seo-days" name="seo_sitemap_past_days" min="0" max="3650" step="1" class="small-text" value="<?php echo (int) $settings['seo_sitemap_past_days']; ?>"> Tage
+					<p class="description">Vergangene Veranstaltungen bleiben erreichbar; in der Sitemap stehen nur die der letzten Tage.</p></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ec-seo-title">Seitentitel-Muster</label></th>
+					<td><input type="text" id="ec-seo-title" name="seo_title_pattern" class="regular-text" maxlength="200" value="<?php echo esc_attr( $settings['seo_title_pattern'] ); ?>">
+					<p class="description">Platzhalter: {title}, {date}, {time}, {venue}, {city}, {site}. Fehlt ein Wert, entfällt der Platzhalter samt dem Wort davor. Beispiel: „<?php echo esc_html( Eventcrawler_Seo::title( $example, $settings['seo_title_pattern'] ) ); ?>“</p></td>
+				</tr>
+			</table>
+			<?php if ( Eventcrawler_Seo::enabled() ) : ?>
+				<p class="eventcrawler-icon-ok">Detailseiten sind aktiv, z. B. <code><?php echo esc_html( user_trailingslashit( home_url( '/' . $settings['seo_base'] . '/ninotschka-2026-10-24' ) ) ); ?></code></p>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
 	public static function render_page() {
 		if ( ! current_user_can( Eventcrawler_Admin::CAPABILITY ) ) {
 			wp_die( esc_html__( 'Keine Berechtigung.', 'eventcrawler' ), 403 );
@@ -100,7 +158,7 @@ class Eventcrawler_Settings_Admin {
 		?>
 		<div class="wrap eventcrawler-admin">
 			<h1>Einstellungen</h1>
-			<?php Eventcrawler_Admin::render_help( 'Hier legen Sie fest, wie der Eventcrawler mit dem bisherigen Veranstaltungs-Plugin „WP Kulmbacher Land“ zusammenarbeitet. Solange Sie nichts ändern, bleiben alle bestehenden Seiten unverändert.' ); ?>
+			<?php Eventcrawler_Admin::render_help( 'Hier legen Sie fest, wie der Eventcrawler mit dem bisherigen Veranstaltungs-Plugin „WP Kulmbacher Land“ zusammenarbeitet und ob Veranstaltungen eigene Seiten für Suchmaschinen bekommen. Solange Sie nichts ändern, bleiben alle bestehenden Seiten unverändert.' ); ?>
 			<?php if ( is_array( $notice ) ) : ?>
 				<div class="notice notice-<?php echo esc_attr( $notice[0] ); ?> is-dismissible"><p><?php echo esc_html( $notice[1] ); ?></p></div>
 			<?php endif; ?>
@@ -149,6 +207,7 @@ class Eventcrawler_Settings_Admin {
 					<?php endif; ?>
 				</div>
 
+				<?php self::render_seo_section( $settings ); ?>
 				<?php do_action( 'eventcrawler_settings_sections', $settings ); ?>
 
 				<?php submit_button( 'Einstellungen speichern' ); ?>

@@ -343,7 +343,12 @@ class Eventcrawler_Frontend {
 				<p class="eventcrawler-event__time"><time datetime="<?php echo esc_attr( $datetime ); ?>"><?php echo esc_html( $time ); ?></time></p>
 			<?php endif; ?>
 			<div class="eventcrawler-event__body">
-				<h4 class="eventcrawler-event__title"><?php echo esc_html( $event['title'] ); ?></h4>
+				<?php $detail_url = Eventcrawler_Seo::url( $event ); // "" solange Detailseiten aus sind (Ausgabe dann unverändert). ?>
+				<?php if ( '' !== $detail_url ) : ?>
+					<h4 class="eventcrawler-event__title"><a href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $event['title'] ); ?></a></h4>
+				<?php else : ?>
+					<h4 class="eventcrawler-event__title"><?php echo esc_html( $event['title'] ); ?></h4>
+				<?php endif; ?>
 				<?php if ( '' !== $venue ) : ?>
 					<p class="eventcrawler-event__venue"><?php echo esc_html( $venue ); ?></p>
 				<?php endif; ?>

@@ -12,6 +12,13 @@ Stand: 2026-10-29 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme; Gestaltu
 - [x] Admin-UX überarbeitet: Übersicht, Quellen mit Statuskarten, Export, Hilfe, Hilfetexte, deutsche Begriffe,
       technische Details eingeklappt (A105, 06-admin.md Abschnitte 16–18)
 - [ ] **Kunde:** Redaktion (Katharina) die neue Oberfläche ansehen lassen; Begriffe/Hilfetexte nachschärfen
+- [x] SEO-Detailseiten (standardmäßig aus) unter `/eventcrawler-veranstaltung/{slug}/`: Title, Description,
+      Self-Canonical, Robots, JSON-LD Event, Sitemap, 404, vergangene Termine 200; Filter-URLs noindex; Schema 4
+      (`slug`) (A106–A110, 12-seo.md)
+- [ ] **Kunde:** Ist ein SEO-Plugin (Yoast, Rank Math …) aktiv? Detailseite dort prüfen (doppelte Description?)
+- [ ] **Kunde (E9):** Beschreibungen gecrawlter/importierter Termine öffentlich zeigen? (derzeit nur manuelle)
+- [ ] **Kunde:** Detailseiten erst nach Prüfung der Testseite einschalten; Search Console beobachten
+- [ ] Nach WPEM-Abschaltung und E2: Redirects `/veranstaltung/…` → Detailseite (12-seo.md Abschnitt 10)
 
 ## WPEM-Ersatz (2026-10-28) ← NÄCHSTER SCHRITT
 

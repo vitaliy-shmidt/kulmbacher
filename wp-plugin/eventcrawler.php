@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Eventcrawler
  * Description:       Crawlt Veranstaltungen externer Websites in eine eigene Tabelle, verwaltet manuelle Termine, zeigt sie per Shortcode an und exportiert sie als XML.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Text Domain:       eventcrawler
@@ -12,8 +12,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'EVENTCRAWLER_VERSION', '0.2.0' );
-define( 'EVENTCRAWLER_DB_VERSION', '3' );
+define( 'EVENTCRAWLER_VERSION', '0.3.0' );
+define( 'EVENTCRAWLER_DB_VERSION', '4' );
 define( 'EVENTCRAWLER_PATH', plugin_dir_path( __FILE__ ) );
 
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-settings.php';
@@ -28,6 +28,7 @@ require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-manual-events.php'
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-wpem-migration.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-importer.php';
 require_once EVENTCRAWLER_PATH . 'includes/frontend/class-eventcrawler-frontend.php';
+require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-seo.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/abstract-eventcrawler-source.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-burg-rabenstein.php';
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-bad-steben.php';
@@ -42,6 +43,8 @@ require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-bay
 require_once EVENTCRAWLER_PATH . 'includes/sources/class-eventcrawler-source-concertbuero-franken.php';
 
 register_activation_hook( __FILE__, array( 'Eventcrawler_Installer', 'activate' ) );
+// Rewrite-Regeln der Detailseiten beim nächsten Request ohne Eventcrawler neu erzeugen lassen (docs/12-seo.md).
+register_deactivation_hook( __FILE__, array( 'Eventcrawler_Seo', 'deactivate' ) );
 
 // Tabelle aktualisieren, falls sich EVENTCRAWLER_DB_VERSION ohne erneute Aktivierung geändert hat.
 add_action( 'plugins_loaded', array( 'Eventcrawler_Installer', 'maybe_upgrade' ) );
@@ -51,6 +54,9 @@ add_action( 'plugins_loaded', array( 'Eventcrawler_Filter_Rules', 'maybe_initial
 
 // Öffentliche Shortcodes (Liste, Kalender, WPEM-Aliase), docs/10-frontend.md.
 Eventcrawler_Frontend::init();
+
+// SEO-Detailseiten, Sitemap, noindex für Filter-URLs (docs/12-seo.md). Detailseiten standardmäßig aus.
+Eventcrawler_Seo::init();
 
 if ( is_admin() ) {
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-admin.php';

@@ -55,8 +55,9 @@ class Eventcrawler_Installer {
 			return false;
 		}
 
-		self::create_table(); // Version 3: ergänzt nur die Spalte venue_address (keine Umbenennung).
+		self::create_table(); // Version 3: venue_address, Version 4: slug (nur neue Spalten, keine Umbenennung).
 		self::backfill();
+		self::backfill_slugs();
 
 		update_option( self::DB_VERSION_OPTION, EVENTCRAWLER_DB_VERSION, false );
 		return true;
@@ -94,6 +95,7 @@ class Eventcrawler_Installer {
   city varchar(100) NOT NULL,
   event_url varchar(2048) DEFAULT NULL,
   source_url varchar(2048) DEFAULT NULL,
+  slug varchar(191) DEFAULT NULL,
   content_hash char(40) NOT NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
@@ -104,7 +106,8 @@ class Eventcrawler_Installer {
   KEY source_event_key (source,event_key),
   KEY start_date (start_date,start_time),
   KEY city (city),
-  KEY last_seen_at (last_seen_at)
+  KEY last_seen_at (last_seen_at),
+  UNIQUE KEY slug (slug)
 ) {$charset_collate};";
 
 		dbDelta( $sql );
@@ -147,6 +150,32 @@ class Eventcrawler_Installer {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Schema 4: dauerhaften URL-Slug für Zeilen ohne Slug vergeben (idempotent, docs/12-seo.md Abschnitt 3).
+	 * Reihenfolge nach id, damit bei gleichem Titel + Datum der älteste Termin den Slug ohne Zusatz erhält.
+	 * Vorhandene Slugs werden nie geändert.
+	 */
+	private static function backfill_slugs() {
+		global $wpdb;
+		$table = self::table_name();
+		$rows  = $wpdb->get_results( "SELECT id, title, start_date FROM {$table} WHERE slug IS NULL ORDER BY id ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		if ( ! $rows ) {
+			return;
+		}
+		$used = array_flip( $wpdb->get_col( "SELECT slug FROM {$table} WHERE slug IS NOT NULL" ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		foreach ( $rows as $row ) {
+			$slug = Eventcrawler_Repository::slug_base( $row['title'], $row['start_date'] );
+			if ( isset( $used[ $slug ] ) ) {
+				$slug .= '-' . (int) $row['id'];
+			}
+			if ( isset( $used[ $slug ] ) ) {
+				$slug = 'veranstaltung-' . (int) $row['id'];
+			}
+			$used[ $slug ] = true;
+			$wpdb->update( $table, array( 'slug' => $slug ), array( 'id' => (int) $row['id'] ), array( '%s' ), array( '%d' ) );
+		}
 	}
 
 	/**
