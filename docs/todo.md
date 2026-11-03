@@ -2,6 +2,11 @@
 
 Stand: 2026-10-29 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme; Gestaltung überarbeitet). Erledigte Punkte abhaken, neue offene Punkte ergänzen.
 
+## Produktivvorbereitung (2026-11-03)
+
+- [x] Parallelbetrieb: keine automatische Übernahme von `[events_list]`/`[events_calendar]`, Option „WPEM-Shortcodes
+      übernehmen“ (Standard aus), Frontend-Testseite als Entwurf per Klick (A103, 10-frontend.md Abschnitt 15)
+
 ## WPEM-Ersatz (2026-10-28) ← NÄCHSTER SCHRITT
 
 Details, Funktionsmatrix, Entscheidungen E1–E10 und Abschaltplan: [10-frontend.md](10-frontend.md).

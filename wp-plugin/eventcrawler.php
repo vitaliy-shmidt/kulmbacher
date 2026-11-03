@@ -16,6 +16,7 @@ define( 'EVENTCRAWLER_VERSION', '0.2.0' );
 define( 'EVENTCRAWLER_DB_VERSION', '3' );
 define( 'EVENTCRAWLER_PATH', plugin_dir_path( __FILE__ ) );
 
+require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-settings.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-installer.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-repository.php';
 require_once EVENTCRAWLER_PATH . 'includes/class-eventcrawler-filter.php';
@@ -56,5 +57,6 @@ if ( is_admin() ) {
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-domain-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-event-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-wpem-admin.php';
+	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-settings-admin.php';
 	Eventcrawler_Admin::init();
 }

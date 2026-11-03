@@ -69,13 +69,17 @@ class Eventcrawler_Frontend {
 	}
 
 	/**
-	 * Eigene Shortcodes immer; die WPEM-Namen nur, wenn sie frei sind (WPEM registriert sie beim Laden des Plugins,
-	 * also vor init). Solange WPEM aktiv ist, bleibt dessen Ausgabe unverändert – Paralleltest möglich.
+	 * Eigene Shortcodes immer. Die WPEM-Namen [events_list]/[events_calendar] nur, wenn die Einstellung
+	 * „WPEM-Shortcodes übernehmen“ ausdrücklich aktiviert ist UND WPEM nicht aktiv ist UND die Namen frei sind (A103).
+	 * Standard ist Parallelbetrieb: WPEM-Seiten bleiben unverändert, auch nachdem WPEM deaktiviert wurde.
 	 */
 	public static function register_shortcodes() {
 		add_shortcode( 'eventcrawler_events', array( __CLASS__, 'shortcode_events' ) );
 		add_shortcode( 'eventcrawler_calendar', array( __CLASS__, 'shortcode_calendar' ) );
 
+		if ( ! Eventcrawler_Settings::aliases_enabled() ) {
+			return;
+		}
 		if ( ! shortcode_exists( 'events_list' ) ) {
 			add_shortcode( 'events_list', array( __CLASS__, 'shortcode_wpem_events_list' ) );
 		}

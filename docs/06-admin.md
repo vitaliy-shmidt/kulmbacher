@@ -453,3 +453,18 @@ bei deaktiviertem WPEM. In WPEM wird nichts verändert (Prüfsummen im Test).
 
 Getestet (2026-10-28): Probelauf mit 5 Testterminen (3 neu, 1 ohne Ort, 1 Entwurf), HTTP: Abonnent 403, ohne Nonce 403,
 GET 405, Lauf 1 → 3 übernommen, Lauf 2 → 0; Seite auch bei deaktiviertem WPEM erreichbar.
+
+## 14. „Einstellungen“ (implementiert 2026-11-03)
+
+Seite **Eventcrawler → Einstellungen** (`admin.php?page=eventcrawler-settings`), Klasse `Eventcrawler_Settings_Admin`,
+Werte in der Option `eventcrawler_settings` (`Eventcrawler_Settings`, feste Defaults, beschädigte Werte → Default).
+
+- **WPEM-Kompatibilität:** Modusanzeige (Parallelbetrieb / Eigenständig / WPEM-Shortcodes übernommen), Liste der
+  eigenen Shortcodes, Checkbox „WPEM-Shortcodes übernehmen“ (Standard aus, wirkt nur ohne aktives WPEM;
+  10-frontend.md Abschnitt 15, A103).
+- **Frontend-Testseite:** „Eventcrawler-Testseite erstellen“ legt einmalig einen **Entwurf** „Eventcrawler Test“ an;
+  danach Links „Vorschau ansehen“/„Seite bearbeiten“.
+- **Sicherheit:** Speichern (`eventcrawler_save_settings`) und Testseite (`eventcrawler_create_test_page`) nur per POST
+  an `admin-post.php`, `manage_options`, Nonce je Aktion im Feld `eventcrawler_settings_nonce`. Ungültige Eingaben →
+  Fehlermeldung, nichts gespeichert. Getestet in `tools/test-parallel.php` (Gast/Redakteur/Abonnent 403, GET 405,
+  falscher bzw. fremder Nonce 403).

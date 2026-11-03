@@ -265,8 +265,8 @@ Keine Nonces nötig, weil das Frontend nur liest; keine AJAX-Endpunkte für Besu
 |---|---|---|
 | `[eventcrawler_events]` | `view` (`list` Standard, `day`), `per_page` (20, max. 100), `sources` (kommagetrennte Slugs, z. B. `manual,coburg`; leer = alle; nur unbekannte Slugs = nichts), `city` (feste Stadt), `date` (Starttag), `show_filters` (1/0), `show_calendar` (1/0), `title` (Überschrift, Standard „Veranstaltungen“, leer = keine) | **Liste:** alle Termine ab Datum (Standard heute), nach Tagen gruppiert, serverseitig paginiert. **Tagesansicht:** ein Tag mit Vor/Zurück wie WPEM. Eine Suche gilt in beiden Ansichten über alle Tage ab Datum |
 | `[eventcrawler_calendar]` | `month`, `year`, `sources`, `link` (URL der Listenseite; Standard: aktuelle Seite), `title` (Standard „Veranstaltungskalender“, leer = keine) | Monatsraster Mo–So, Vor/Zurück, je Tag Anzahl, bis zu 3 Termine (Uhrzeit + Titel, auf den Termin verlinkt) und „+n weitere“ (auf den Tag); mobil Agenda (siehe Gestaltung) |
-| `[events_list]` | `limit`, `date` (wie WPEM; `venue`, `show_past` ohne Wirkung) | **Alias**, nur wenn WPEM inaktiv ist: Tagesansicht |
-| `[events_calendar]` | `month`, `year` | **Alias**, nur wenn WPEM inaktiv ist: Kalender |
+| `[events_list]` | `limit`, `date` (wie WPEM; `venue`, `show_past` ohne Wirkung) | **Alias**, nur mit Einstellung „WPEM-Shortcodes übernehmen“ **und** inaktivem WPEM (Abschnitt 15): Tagesansicht |
+| `[events_calendar]` | `month`, `year` | **Alias**, nur mit Einstellung **und** inaktivem WPEM: Kalender |
 
 GET-Parameter: `date` (JJJJ-MM-TT, wie WPEM), `ec_search`, `ec_city`, `ec_page`, `ec_month` (JJJJ-MM). Ungültige Werte
 werden ignoriert. Fremde Parameter der Seite (z. B. `page_id`) bleiben beim Absenden des Filters erhalten.
@@ -384,8 +384,37 @@ WPEM bleibt aktiv, bis alle Punkte erledigt sind:
    Smartphone).
 5. Redaktion legt neue Termine nur noch im Eventcrawler an (Stichtag festlegen); WPEM nur noch lesen.
 6. E2/E3 entschieden, ggf. Redirects (Abschnitt 11) bzw. Import gebaut.
-7. WPEM deaktivieren (nicht löschen): Seiten mit `[events_list]`/`[events_calendar]` laufen über die Aliase weiter.
+7. „Eventcrawler → Einstellungen → WPEM-Shortcodes übernehmen“ einschalten (wirkt erst ohne WPEM), dann WPEM
+   deaktivieren (nicht löschen): Seiten mit `[events_list]`/`[events_calendar]` laufen über die Aliase weiter.
    **Danach „Einstellungen → Permalinks“ einmal speichern**, sonst liefern alte WPEM-URLs die Blog-Übersicht mit 200
    (Abschnitt 6). URLs prüfen, XML-Export prüfen.
 8. Nach einer Beobachtungszeit: WPEM-Daten sichern, Plugin löschen (die WPEM-Posts bleiben für Redirects in der
    Datenbank, solange Redirects gebraucht werden).
+
+## 15. Parallelbetrieb mit WPEM (2026-11-03, A103)
+
+Ziel: Der Eventcrawler kann beim Kunden installiert und aktiviert werden, **ohne** dass sich eine bestehende Seite
+ändert. WPEM bleibt produktiv; der Eventcrawler wird parallel auf eigenen Seiten getestet.
+
+| Zustand | `[events_list]` / `[events_calendar]` | `[eventcrawler_events]` / `[eventcrawler_calendar]` |
+|---|---|---|
+| WPEM aktiv (Standard beim Kunden) | **WPEM** (unverändert) | Eventcrawler |
+| WPEM aktiv, Option „WPEM-Shortcodes übernehmen“ an | **WPEM** (Option wartet) | Eventcrawler |
+| WPEM deaktiviert, Option aus (Standard) | **nicht registriert** – WordPress zeigt den Shortcode-Text; der Eventcrawler übernimmt nichts automatisch | Eventcrawler |
+| WPEM deaktiviert, Option an | Eventcrawler (Aliase, Abschnitt 12) | Eventcrawler |
+
+- Einstellung: **Eventcrawler → Einstellungen → WPEM-Kompatibilität**, Checkbox „WPEM-Shortcodes übernehmen“
+  (Option `eventcrawler_settings`, Schlüssel `wpem_aliases`, Standard 0). Die Seite zeigt den aktuellen Modus
+  („Parallelbetrieb“, „Eigenständig“, „WPEM-Shortcodes übernommen“) und die eigenen Shortcodes.
+- „WPEM aktiv“ = Konstante `WPEM_VERSION` oder Klasse `WPEM_Frontend` vorhanden (also Plugin geladen), nicht „WPEM-Daten
+  vorhanden“ (die bleiben nach dem Deaktivieren in der Datenbank). Für Tests über den Filter `eventcrawler_wpem_active`
+  übersteuerbar.
+- **Frontend-Testseite:** Button „Eventcrawler-Testseite erstellen“ auf derselben Seite. Legt per POST (Nonce,
+  `manage_options`) **eine** neue Seite „Eventcrawler Test“ als **Entwurf** an (Inhalt `[eventcrawler_calendar]` und
+  `[eventcrawler_events]`), merkt sich die ID in `eventcrawler_test_page_id` und bietet danach „Vorschau ansehen“ /
+  „Seite bearbeiten“ statt einer zweiten Seite an. Keine Veröffentlichung, keine Änderung bestehender Seiten.
+- Die WPEM-Übernahme (Abschnitt 10) bleibt eine **ausdrückliche Admin-Aktion**; beim Aktivieren läuft nichts automatisch.
+- Tests: `tools/test-parallel.php` (53 Tests mit aktivem WPEM, 50 mit deaktiviertem; der jeweils andere Zustand wird
+  simuliert): Shortcode-Besitz in allen vier Zuständen, eigene Shortcodes, Einstellungen (Validierung, Capability,
+  Nonce, GET), Testseite (Entwurf, keine zweite Seite, bestehende Seiten unverändert). `tools/test-frontend.php` prüft
+  den Alias jetzt gegen `Eventcrawler_Settings::aliases_enabled()`.

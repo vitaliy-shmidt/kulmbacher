@@ -367,7 +367,8 @@ try {
 
 	echo "WPEM-Aliase\n";
 	$wpem_active = post_type_exists( 'wpem_event' ) && class_exists( 'WPEM_Frontend' );
-	ec_check( 'Alias nur ohne WPEM registriert', $GLOBALS['shortcode_tags']['events_list'] === array( 'Eventcrawler_Frontend', 'shortcode_wpem_events_list' ), ! $wpem_active );
+	// Seit 2026-11-03 (A103): Alias nur mit ausdrücklicher Einstellung UND ohne aktives WPEM (tools/test-parallel.php).
+	ec_check( 'Alias nur mit Freigabe und ohne WPEM registriert', isset( $GLOBALS['shortcode_tags']['events_list'] ) && $GLOBALS['shortcode_tags']['events_list'] === array( 'Eventcrawler_Frontend', 'shortcode_wpem_events_list' ), Eventcrawler_Settings::aliases_enabled() );
 	$alias = Eventcrawler_Frontend::shortcode_wpem_events_list( array( 'date' => $d2 ) );
 	ec_check( 'Alias events_list = Tagesansicht', ec_ids( $alias ), array( $d, $e, $f, $g ) );
 	ec_check( 'Alias events_calendar = Kalender', false !== strpos( Eventcrawler_Frontend::shortcode_wpem_events_calendar( array( 'month' => (int) substr( $month, 5, 2 ), 'year' => (int) substr( $month, 0, 4 ) ) ), 'date=' . $d5 ), true );

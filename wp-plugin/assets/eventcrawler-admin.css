@@ -140,3 +140,172 @@ body.eventcrawler-modal-open {
 		padding-bottom: 0;
 	}
 }
+
+/*
+ * Gemeinsames Layout der Eventcrawler-Seiten (docs/06-admin.md Abschnitt 14): Karten, Status, Hilfe.
+ * WordPress-Admin-Stil, dezente Farben: Grün = OK, Gelb = Hinweis, Rot = Fehler, Grau = nicht eingerichtet.
+ */
+.eventcrawler-admin {
+	--ec-ok: #00a32a;
+	--ec-warning: #dba617;
+	--ec-error: #d63638;
+	--ec-muted: #8c8f94;
+	--ec-border: #dcdcde;
+}
+
+.eventcrawler-help {
+	max-width: 52rem;
+	margin: 0.5em 0 1.25em;
+	color: #50575e;
+	font-size: 14px;
+}
+
+.eventcrawler-card {
+	background: #fff;
+	border: 1px solid var( --ec-border );
+	border-radius: 4px;
+	padding: 1rem 1.25rem;
+	margin: 0 0 1.25rem;
+	max-width: 60rem;
+	box-sizing: border-box;
+}
+
+.eventcrawler-card > h2:first-child,
+.eventcrawler-card > h3:first-child {
+	margin-top: 0;
+}
+
+.eventcrawler-grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 15rem, 1fr ) );
+	gap: 1rem;
+	max-width: 80rem;
+	margin: 0 0 1.25rem;
+}
+
+.eventcrawler-grid .eventcrawler-card {
+	margin: 0;
+	max-width: none;
+}
+
+.eventcrawler-number {
+	display: block;
+	font-size: 2rem;
+	line-height: 1.2;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.eventcrawler-label {
+	color: #50575e;
+}
+
+.eventcrawler-status {
+	display: inline-block;
+	padding: 0 0.5em;
+	border-radius: 3px;
+	border-left: 4px solid var( --ec-muted );
+	background: #f6f7f7;
+	font-weight: 600;
+}
+
+.eventcrawler-status--ok { border-left-color: var( --ec-ok ); }
+.eventcrawler-status--warning { border-left-color: var( --ec-warning ); }
+.eventcrawler-status--error { border-left-color: var( --ec-error ); }
+.eventcrawler-status--muted { border-left-color: var( --ec-muted ); color: #50575e; }
+
+.eventcrawler-source-card {
+	border-left-width: 4px;
+}
+
+.eventcrawler-source-card--ok { border-left-color: var( --ec-ok ); }
+.eventcrawler-source-card--warning { border-left-color: var( --ec-warning ); }
+.eventcrawler-source-card--error { border-left-color: var( --ec-error ); }
+.eventcrawler-source-card--muted { border-left-color: var( --ec-muted ); }
+
+.eventcrawler-source-card h3 {
+	margin: 0 0 0.25rem;
+	font-size: 15px;
+}
+
+.eventcrawler-source-card p {
+	margin: 0.25rem 0;
+}
+
+.eventcrawler-icon-ok::before { content: "\2713\00a0"; color: var( --ec-ok ); }
+.eventcrawler-icon-warning::before { content: "\26a0\00a0"; color: var( --ec-warning ); }
+.eventcrawler-icon-error::before { content: "\2715\00a0"; color: var( --ec-error ); }
+.eventcrawler-icon-muted::before { content: "\2013\00a0"; color: var( --ec-muted ); }
+
+.eventcrawler-checklist {
+	list-style: none;
+	margin: 0.5em 0 1em;
+	padding: 0;
+}
+
+.eventcrawler-checklist li::before {
+	content: "\2713\00a0";
+	color: var( --ec-ok );
+	font-weight: 700;
+}
+
+.eventcrawler-checklist li.is-warning::before {
+	content: "\26a0\00a0";
+	color: var( --ec-warning );
+}
+
+.eventcrawler-hint {
+	border-left: 4px solid var( --ec-warning );
+	padding: 0.25em 0.75em;
+	background: #fcf9e8;
+}
+
+.eventcrawler-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	margin: 0.5rem 0 1.25rem;
+}
+
+.eventcrawler-tech {
+	margin-top: 0.5rem;
+	color: #50575e;
+}
+
+.eventcrawler-tech summary {
+	cursor: pointer;
+	color: #2271b1;
+}
+
+.eventcrawler-tech code,
+.eventcrawler-tech pre {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.eventcrawler-faq details {
+	border-bottom: 1px solid var( --ec-border );
+	padding: 0.5rem 0;
+}
+
+.eventcrawler-faq summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.eventcrawler-steps li {
+	margin-bottom: 0.5rem;
+}
+
+.eventcrawler-table-compact td,
+.eventcrawler-table-compact th {
+	padding: 6px 10px;
+}
+
+.eventcrawler-errors {
+	max-height: 24rem;
+	overflow: auto;
+	margin: 0;
+	padding-left: 1.25rem;
+}

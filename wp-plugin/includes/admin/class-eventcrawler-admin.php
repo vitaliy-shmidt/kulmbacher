@@ -16,6 +16,11 @@ class Eventcrawler_Admin {
 	const PAGE_SLUG  = 'eventcrawler';
 
 	/**
+	 * Slug des Top-Level-Menüs „Eventcrawler“ (Elternseite aller Untermenüs).
+	 */
+	const MENU_SLUG = 'eventcrawler';
+
+	/**
 	 * GET-Parameter der Listenfilter (sichtbar in der URL).
 	 */
 	const LIST_FIELDS = array(
@@ -56,6 +61,7 @@ class Eventcrawler_Admin {
 		Eventcrawler_Domain_Admin::init();
 		Eventcrawler_Event_Admin::init();
 		Eventcrawler_Wpem_Admin::init();
+		Eventcrawler_Settings_Admin::init();
 	}
 
 	/**
@@ -301,6 +307,12 @@ class Eventcrawler_Admin {
 	 * @param string $hook_suffix Aktuelle Admin-Seite.
 	 */
 	public static function enqueue_assets( $hook_suffix ) {
+		// Gemeinsames Layout (Karten, Status, Hilfe) auf allen Eventcrawler-Seiten.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nur Seitenerkennung.
+		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( 0 === strpos( $page, 'eventcrawler' ) ) {
+			wp_enqueue_style( 'eventcrawler-admin', plugins_url( 'assets/eventcrawler-admin.css', EVENTCRAWLER_PATH . 'eventcrawler.php' ), array(), EVENTCRAWLER_VERSION );
+		}
 		if ( 'toplevel_page_' . self::PAGE_SLUG !== $hook_suffix ) {
 			return;
 		}
@@ -389,6 +401,7 @@ class Eventcrawler_Admin {
 		Eventcrawler_Filter_Admin::register_menu();
 		Eventcrawler_Domain_Admin::register_menu();
 		Eventcrawler_Wpem_Admin::register_menu();
+		Eventcrawler_Settings_Admin::register_menu();
 	}
 
 	/**
@@ -560,6 +573,15 @@ class Eventcrawler_Admin {
 				esc_html( $label )
 			);
 		}
+	}
+
+	/**
+	 * Kurzer Hilfetext oben auf einer Seite (ruhig, ohne Notice-Farbe).
+	 *
+	 * @param string $text Klartext.
+	 */
+	public static function render_help( $text ) {
+		echo '<p class="eventcrawler-help">' . esc_html( $text ) . '</p>';
 	}
 
 	private static function render_notices() {
