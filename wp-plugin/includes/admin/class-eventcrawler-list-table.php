@@ -58,7 +58,7 @@ class Eventcrawler_List_Table extends WP_List_Table {
 			'venue_name'   => 'Veranstaltungsort',
 			'city'         => 'Stadt',
 			'source'       => 'Quelle',
-			'last_seen_at' => 'zuletzt geprüft',
+			'last_seen_at' => 'Zuletzt gesehen',
 			'actions'      => 'Aktionen',
 		);
 	}
@@ -107,7 +107,7 @@ class Eventcrawler_List_Table extends WP_List_Table {
 	}
 
 	public function no_items() {
-		echo 'Keine Veranstaltungen vorhanden.';
+		echo 'Keine Veranstaltungen gefunden. Prüfen Sie die Filter oder rufen Sie unter „Quellen“ neue Veranstaltungen ab.';
 	}
 
 	protected function column_cb( $item ) {

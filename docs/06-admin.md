@@ -19,6 +19,12 @@
 
 ## 1. Menü
 
+> **Seit 2026-11-03 (A105):** Top-Level „Eventcrawler“ öffnet die **Übersicht** (`page=eventcrawler-overview`).
+> Navigation: Übersicht · Veranstaltungen (`page=eventcrawler`, URL unverändert) · Veranstaltung hinzufügen · Import ·
+> Quellen · Filterregeln · Link-Bezeichnungen · Export · Einstellungen · WPEM-Übernahme (nur mit WPEM-Daten) · Hilfe.
+> Der Abruf („Crawler starten“) liegt jetzt auf „Quellen“ und „Übersicht“, der XML-Export auf „Export“; die Liste heißt
+> „Veranstaltungen“. Abschnitte 16–18 beschreiben die neuen Seiten. Der folgende Text beschreibt den Stand vor 2026-11-03.
+
 - Top-Level-Menüpunkt **„Eventcrawler“**, Seitentitel und Überschrift **„Importierte Veranstaltungen“**,
   Seiten-Slug `eventcrawler` (`admin.php?page=eventcrawler`), Icon `dashicons-calendar-alt`, Position 26
 - **Warum nicht „Veranstaltungen“:** Auf dem Zielsystem gibt es bereits ein anderes Plugin für die **manuelle**
@@ -475,3 +481,65 @@ Seite **Eventcrawler → Import** (`admin.php?page=eventcrawler-import`), Klasse
 Formate, Regeln und Sicherheit: [11-import.md](11-import.md) (Abschnitte 6 und 7). Die Listenspalte „Quelle“, der
 Listen- und Exportfilter zeigen Importquellen mit ihrer Bezeichnung („… (Import)“); importierte Termine haben in der
 Spalte „Aktionen“ kein „Bearbeiten“ (nur manuelle Termine).
+
+## 16. „Übersicht“ und „Quellen“ (implementiert 2026-11-03, A105)
+
+**Übersicht** (`page=eventcrawler-overview`, Startseite des Menüs, `Eventcrawler_Dashboard_Admin::render_overview()`):
+
+- Kennzahlen als Karten (verlinkt): Veranstaltungen gespeichert, davon ab heute, manuelle Veranstaltungen, aktive
+  Quellen; „Letzter Abruf“ (jüngster Eintrag in `eventcrawler_source_status`) und „Letzter Import“
+  (`eventcrawler_last_import`).
+- Schnellaktionen: „Alle Quellen abrufen“ (gleiches Skript wie bisher, ein Request je Quelle), „Veranstaltung
+  hinzufügen“, „Datei importieren“, „XML exportieren“.
+- Quellen mit Fehler oder Hinweis als Karten; sonst „Keine Auffälligkeiten beim letzten Abruf“.
+- Kurzstatus WPEM-Kompatibilität (Parallelbetrieb).
+- Abfragen: `COUNT … GROUP BY source` (Index `source_external`) und `COUNT … WHERE start_date >= heute` (Index
+  `start_date`); kein Volltabellen-Scan mit Daten, kein Cache.
+
+**Quellen** (`page=eventcrawler-sources`, `Eventcrawler_Sources_Admin`): eine Karte je registrierter Quelle mit
+Statusfarbe und Symbol (✓ grün = letzter Abruf erfolgreich, ⚠ gelb = seit mehr als 7 Tagen nicht abgerufen, ✕ rot =
+letzter Abruf fehlgeschlagen „Vorhandene Veranstaltungen bleiben erhalten“, – grau = noch nicht über diese
+Oberfläche abgerufen), Anzahl gespeicherter Veranstaltungen, „Zuletzt abgerufen: heute 08:10“, Ergebnis des letzten
+Laufs (gefunden · neu · aktualisiert · unverändert · gefiltert · übersprungen), Button „Abrufen“ je Quelle und
+„Alle Quellen abrufen“. Kennung, Dauer und technische Meldung (z. B. `cURL error 28`) nur unter „Technische Details“.
+Darunter „Weitere Herkunft“: Manuell und Importquellen (Anzahl, letzter Import).
+
+**Status-Speicherung:** `Eventcrawler_Admin::handle_crawl_source()` ruft nach jedem Lauf
+`Eventcrawler_Sources_Admin::record_status()` auf → Option `eventcrawler_source_status` (je Quelle: `time`, `ok`,
+`stats`, `message`, `duration`; nur der letzte Lauf). Abgelehnte Anfragen (Rechte, Nonce, unbekannte Quelle)
+schreiben nichts. Crawler und Adapter sind unverändert (MD5 geprüft).
+
+**Skript** (`assets/eventcrawler-admin.js`): unverändertes Verfahren (A55/A56), jetzt mit Auslösern
+`#eventcrawler-crawl-start` (Auswahlfeld oder `data-source`) und `.eventcrawler-crawl-one[data-source]`; Texte
+„Abruf läuft …“, „Abruf abgeschlossen …“; bei einer fehlgeschlagenen Quelle „Abruf fehlgeschlagen. Vorhandene
+Veranstaltungen bleiben erhalten.“ mit aufklappbaren technischen Details. Geladen auf Übersicht, Veranstaltungen
+(Detail-Modal) und Quellen.
+
+## 17. „Veranstaltungen“, „Export“ (geändert 2026-11-03)
+
+- **Veranstaltungen** (`page=eventcrawler`, unverändert erreichbar): Überschrift „Veranstaltungen“, Buttons
+  „Veranstaltung hinzufügen“ und „Datei importieren“, Hilfetext, Listenfilter und Tabelle wie bisher. Spalte „Zuletzt
+  gesehen“ (vorher „zuletzt geprüft“). Abruf und Export sind auf eigene Seiten umgezogen.
+- **Detail-Modal** heißt „Veranstaltungsdetails“: zuerst die redaktionellen Felder mit deutschen Bezeichnungen (Titel
+  … Webseiten-Link, Quelle), darunter aufklappbar „Technische Informationen“ (`id`, `external_id`, `event_key`,
+  `content_hash`, `source_url`, Zeitstempel usw.) – Werte weiterhin genau wie gespeichert, „Alle Werte kopieren“ wie
+  bisher.
+- **Export** (`page=eventcrawler-export`): dasselbe Formular wie bisher (POST `eventcrawler_export`, Nonce, Felder
+  Quelle/Monat/Jahr – jetzt einschließlich Importquellen), Hilfetext, Dateiname. Meldungen („Keine Veranstaltungen für
+  den gewählten Exportfilter“) erscheinen auf der Exportseite. **XML-Format unverändert** (bytegleich).
+
+## 18. „Hilfe“ (implementiert 2026-11-03)
+
+`page=eventcrawler-help`: „Erste Schritte“ (1. Quellen prüfen, 2. Veranstaltungen abrufen, 3. Veranstaltungen
+kontrollieren, 4. Frontend-Testseite prüfen, 5. Export erstellen), „Häufige Fragen“ (nicht erreichbare Quelle,
+„gefiltert“, „unverändert“, „übersprungen“, werden fehlende Termine gelöscht, Import, Parallelbetrieb, gecrawlte
+Termine bearbeiten), Shortcodes, Begriffe. Kurze Hilfetexte stehen zusätzlich oben auf jeder Seite
+(`Eventcrawler_Admin::render_help()`).
+
+**Tests** (`tools/test-admin.php`, 76 Tests): Menüreihenfolge, `manage_options` für alle Seiten, Redakteur sieht kein
+Menü, jede Seite mit Hilfetext, Kennzahlen und Schnellaktionen der Übersicht, 11 Quellenkarten, Export-Formular,
+Hilfe-Inhalte, Liste ohne technische Spalten, Abruf mit simuliertem `cURL error 28` (Status rot, Daten unverändert,
+technische Meldung nur in „Technische Details“), Abruf als Abonnent/mit falschem Nonce schreibt keinen Status,
+Detail-Modal (Admin alle Spalten, Abonnent nichts), alle Seiten als Abonnent/Gast 403 ohne Inhalt. Per HTTP
+zusätzlich: alle 11 Seiten als Admin 200 ohne PHP-Warnungen, als Abonnent 403; AJAX-Abruf/Details als Abonnent bzw.
+mit falschem Nonce 403. Sichtprüfung Übersicht und Quellen (Headless-Edge, 1400 px).

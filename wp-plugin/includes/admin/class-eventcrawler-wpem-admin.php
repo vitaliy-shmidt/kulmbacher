@@ -37,7 +37,7 @@ class Eventcrawler_Wpem_Admin {
 		if ( ! Eventcrawler_Wpem_Migration::has_wpem_data() ) {
 			return;
 		}
-		add_submenu_page( Eventcrawler_Admin::PAGE_SLUG, 'WPEM-Übernahme', 'WPEM-Übernahme', Eventcrawler_Manual_Events::CAPABILITY, self::PAGE_SLUG, array( __CLASS__, 'render_page' ) );
+		add_submenu_page( Eventcrawler_Admin::MENU_SLUG, 'WPEM-Übernahme', 'WPEM-Übernahme', Eventcrawler_Manual_Events::CAPABILITY, self::PAGE_SLUG, array( __CLASS__, 'render_page' ) );
 	}
 
 	public static function handle_migrate() {
@@ -71,7 +71,7 @@ class Eventcrawler_Wpem_Admin {
 		$analysis   = ( new Eventcrawler_Wpem_Migration( new Eventcrawler_Repository() ) )->analyze();
 		$wpem_admin = post_type_exists( Eventcrawler_Wpem_Migration::POST_TYPE );
 		?>
-		<div class="wrap">
+		<div class="wrap eventcrawler-admin">
 			<h1>WPEM-Übernahme</h1>
 			<p>Einmalige Übernahme der Termine aus „WP Kulmbacher Land“ als manuelle Veranstaltungen. In WP Kulmbacher Land
 			wird nichts verändert oder gelöscht. Mehrfaches Ausführen legt nichts doppelt an. Regeln: docs/10-frontend.md Abschnitt 10.</p>

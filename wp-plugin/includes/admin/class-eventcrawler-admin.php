@@ -16,9 +16,17 @@ class Eventcrawler_Admin {
 	const PAGE_SLUG  = 'eventcrawler';
 
 	/**
-	 * Slug des Top-Level-Menüs „Eventcrawler“ (Elternseite aller Untermenüs).
+	 * Slug des Top-Level-Menüs „Eventcrawler“ = Übersicht (seit 2026-11-03). Die Veranstaltungsliste behält ihre
+	 * bisherige URL admin.php?page=eventcrawler (PAGE_SLUG).
 	 */
-	const MENU_SLUG = 'eventcrawler';
+	const MENU_SLUG = 'eventcrawler-overview';
+
+	/**
+	 * Hooks der Seiten, auf denen das Admin-Skript (Abruf, Detail-Modal) geladen wird.
+	 *
+	 * @var string[]
+	 */
+	private static $script_hooks = array();
 
 	/**
 	 * GET-Parameter der Listenfilter (sichtbar in der URL).
@@ -184,8 +192,9 @@ class Eventcrawler_Admin {
 
 		$errors  = array();
 		$filters = self::read_filters( $_POST, self::EXPORT_FIELDS, $errors ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- oben geprüft.
+		$back = Eventcrawler_Dashboard_Admin::PAGE_EXPORT; // Meldungen erscheinen auf der Exportseite.
 		if ( $errors ) {
-			self::redirect_with_notices( array( array( 'type' => 'error', 'message' => 'Export abgebrochen: ' . implode( ' ', $errors ) ) ) );
+			self::redirect_with_notices( array( array( 'type' => 'error', 'message' => 'Export abgebrochen: ' . implode( ' ', $errors ) ) ), array(), $back );
 		}
 		unset( $filters['search'] ); // Keine Freitextsuche im Export.
 
@@ -199,9 +208,9 @@ class Eventcrawler_Admin {
 			if ( 'eventcrawler_export_empty' === $xml->get_error_code() ) {
 				$filtered = $filters['source'] || $filters['month'] || $filters['year'];
 				$message  = $filtered ? 'Keine Veranstaltungen für den gewählten Exportfilter vorhanden.' : $xml->get_error_message();
-				self::redirect_with_notices( array( array( 'type' => 'warning', 'message' => $message ) ) );
+				self::redirect_with_notices( array( array( 'type' => 'warning', 'message' => $message ) ), array(), $back );
 			}
-			self::redirect_with_notices( array( array( 'type' => 'error', 'message' => $xml->get_error_message() ) ) );
+			self::redirect_with_notices( array( array( 'type' => 'error', 'message' => $xml->get_error_message() ) ), array(), $back );
 		}
 
 		if ( $exporter->skipped > 0 ) {
@@ -255,6 +264,9 @@ class Eventcrawler_Admin {
 			'label'    => $source->get_name(),
 			'duration' => round( microtime( true ) - $started, 1 ),
 		);
+
+		// Letzten Lauf je Quelle merken (Übersicht/Quellen-Seite); nur Admin-Anzeige, keine Crawler-Änderung.
+		Eventcrawler_Sources_Admin::record_status( $slug, $result, $data['duration'] );
 
 		if ( is_wp_error( $result ) ) {
 			// Quellenfehler (z. B. HTTP 500): Daten dieser Quelle bleiben unverändert.
@@ -321,11 +333,10 @@ class Eventcrawler_Admin {
 		if ( 0 === strpos( $page, 'eventcrawler' ) ) {
 			wp_enqueue_style( 'eventcrawler-admin', plugins_url( 'assets/eventcrawler-admin.css', EVENTCRAWLER_PATH . 'eventcrawler.php' ), array(), EVENTCRAWLER_VERSION );
 		}
-		if ( 'toplevel_page_' . self::PAGE_SLUG !== $hook_suffix ) {
+		if ( ! in_array( $hook_suffix, self::$script_hooks, true ) ) {
 			return;
 		}
 		wp_enqueue_script( 'eventcrawler-admin', plugins_url( 'assets/eventcrawler-admin.js', EVENTCRAWLER_PATH . 'eventcrawler.php' ), array(), EVENTCRAWLER_VERSION, true );
-		wp_enqueue_style( 'eventcrawler-admin', plugins_url( 'assets/eventcrawler-admin.css', EVENTCRAWLER_PATH . 'eventcrawler.php' ), array(), EVENTCRAWLER_VERSION );
 
 		$sources = array();
 		foreach ( self::source_options() as $slug => $label ) {
@@ -375,9 +386,9 @@ class Eventcrawler_Admin {
 	 * @param array[] $notices Liste aus array( 'type' => success|warning|error, 'message' => string ).
 	 * @param array   $args    Zusätzliche Listenparameter (z. B. source => manual).
 	 */
-	public static function redirect_with_notices( array $notices, array $args = array() ) {
+	public static function redirect_with_notices( array $notices, array $args = array(), $page = self::PAGE_SLUG ) {
 		set_transient( self::notice_key(), $notices, 5 * MINUTE_IN_SECONDS );
-		wp_safe_redirect( add_query_arg( array_merge( array( 'page' => self::PAGE_SLUG ), array_map( 'rawurlencode', $args ) ), admin_url( 'admin.php' ) ) );
+		wp_safe_redirect( add_query_arg( array_merge( array( 'page' => $page ), array_map( 'rawurlencode', $args ) ), admin_url( 'admin.php' ) ) );
 		exit;
 	}
 
@@ -389,28 +400,31 @@ class Eventcrawler_Admin {
 	}
 
 	public static function register_menu() {
-		// Menü bewusst "Eventcrawler": "Veranstaltungen" gehört einem anderen Plugin (manuelle Verwaltung).
-		$hook = add_menu_page(
-			'Importierte Veranstaltungen',
+		// Menü bewusst "Eventcrawler": "Veranstaltungen" als Top-Level gehört WP Kulmbacher Land (A22).
+		add_menu_page(
+			'Eventcrawler',
 			'Eventcrawler',
 			self::CAPABILITY,
-			self::PAGE_SLUG,
-			array( __CLASS__, 'render_page' ),
+			self::MENU_SLUG,
+			array( 'Eventcrawler_Dashboard_Admin', 'render_overview' ),
 			'dashicons-calendar-alt',
 			26
 		);
 
+		// Reihenfolge = Navigation (docs/06-admin.md Abschnitt 1). Die Liste behält page=eventcrawler.
+		self::$script_hooks[] = Eventcrawler_Dashboard_Admin::register_overview();
+		$hook                 = add_submenu_page( self::MENU_SLUG, 'Veranstaltungen', 'Veranstaltungen', self::CAPABILITY, self::PAGE_SLUG, array( __CLASS__, 'render_page' ) );
+		self::$script_hooks[] = $hook;
 		add_action( 'load-' . $hook, array( __CLASS__, 'load_page' ) );
-
-		// Untermenü: erster Eintrag = dieselbe Seite mit eigenem Namen, danach manuelle Termine, "Filterregeln",
-		// "Link-Bezeichnungen" und – nur solange WPEM-Daten existieren – die WPEM-Übernahme.
-		add_submenu_page( self::PAGE_SLUG, 'Importierte Veranstaltungen', 'Importierte Veranstaltungen', self::CAPABILITY, self::PAGE_SLUG, array( __CLASS__, 'render_page' ) );
 		Eventcrawler_Event_Admin::register_menu();
+		Eventcrawler_Import_Admin::register_menu();
+		self::$script_hooks[] = Eventcrawler_Sources_Admin::register_menu();
 		Eventcrawler_Filter_Admin::register_menu();
 		Eventcrawler_Domain_Admin::register_menu();
-		Eventcrawler_Wpem_Admin::register_menu();
-		Eventcrawler_Import_Admin::register_menu();
+		Eventcrawler_Dashboard_Admin::register_export();
 		Eventcrawler_Settings_Admin::register_menu();
+		Eventcrawler_Wpem_Admin::register_menu();
+		Eventcrawler_Dashboard_Admin::register_help();
 	}
 
 	/**
@@ -476,7 +490,6 @@ class Eventcrawler_Admin {
 
 		self::$list_table->prepare_items();
 
-		$sources        = self::source_options();
 		$filter_sources = self::filter_source_options();
 		$years          = ( new Eventcrawler_Repository() )->get_available_years();
 		$f       = self::$list_filters;
@@ -484,42 +497,17 @@ class Eventcrawler_Admin {
 			$years[] = $f['year']; // gewähltes Jahr ohne Daten trotzdem anzeigen
 			sort( $years );
 		}
-		$post_url = admin_url( 'admin-post.php' );
 		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">Importierte Veranstaltungen</h1>
+		<div class="wrap eventcrawler-admin">
+			<h1 class="wp-heading-inline">Veranstaltungen</h1>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Eventcrawler_Manual_Events::PAGE_SLUG ) ); ?>" class="page-title-action">Veranstaltung hinzufügen</a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . Eventcrawler_Import_Admin::PAGE_SLUG ) ); ?>" class="page-title-action">Datei importieren</a>
 			<hr class="wp-header-end">
+			<?php self::render_help( 'Alle gespeicherten Veranstaltungen – abgerufen von Partner-Websites, importiert oder von Ihnen angelegt. Eigene (manuelle) Veranstaltungen können Sie bearbeiten und duplizieren; abgerufene und importierte gehören ihrer Quelle und lassen sich nur löschen. „Details“ zeigt alle gespeicherten Angaben.' ); ?>
 
 			<?php self::render_notices(); ?>
 
-			<?php // Crawler: kein Formular, das Skript ruft je Quelle admin-ajax.php auf (Nonce kommt aus window.eventcrawlerCrawl). ?>
-			<div class="eventcrawler-crawl">
-				<p>
-					<strong>Crawler:</strong>
-					<label for="eventcrawler-crawl-source">Quelle</label>
-					<select id="eventcrawler-crawl-source">
-						<option value="all">Alle Quellen</option>
-						<?php self::render_options( $sources, '' ); ?>
-					</select>
-					<button type="button" id="eventcrawler-crawl-start" class="button button-primary" disabled>Crawler starten</button>
-					<noscript><span class="description">Der Crawler benötigt JavaScript.</span></noscript>
-				</p>
-				<div id="eventcrawler-crawl-progress" class="notice inline" hidden></div>
-			</div>
-
-			<?php // Export- und Filterformulare haben eigene Feldnamen, IDs und Nonce-Felder (keine Kollision mit _wpnonce der Liste). ?>
-
-			<form method="post" action="<?php echo esc_url( $post_url ); ?>" class="eventcrawler-export">
-				<input type="hidden" name="action" value="eventcrawler_export">
-				<?php wp_nonce_field( 'eventcrawler_export', 'eventcrawler_export_nonce' ); ?>
-				<p>
-					<strong>XML-Export:</strong>
-					<?php self::render_period_fields( 'eventcrawler-export', self::EXPORT_FIELDS, $filter_sources, $years, array() ); ?>
-					<button type="submit" class="button">XML exportieren</button>
-				</p>
-			</form>
-
+			<?php // Abrufen: Seiten „Quellen“/„Übersicht“; Export: Seite „Export“ (seit 2026-11-03). ?>
 			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="eventcrawler-filter">
 				<input type="hidden" name="page" value="<?php echo esc_attr( self::PAGE_SLUG ); ?>">
 				<p>
@@ -548,7 +536,7 @@ class Eventcrawler_Admin {
 	 * @param int[]    $years     Verfügbare Jahre.
 	 * @param array    $selected  Aktuelle Werte.
 	 */
-	private static function render_period_fields( $id_prefix, array $fields, array $sources, array $years, array $selected ) {
+	public static function render_period_fields( $id_prefix, array $fields, array $sources, array $years, array $selected ) {
 		$selected = wp_parse_args( $selected, array( 'source' => '', 'month' => 0, 'year' => 0 ) );
 		?>
 		<label for="<?php echo esc_attr( $id_prefix . '-source' ); ?>">Quelle</label>
@@ -593,7 +581,7 @@ class Eventcrawler_Admin {
 		echo '<p class="eventcrawler-help">' . esc_html( $text ) . '</p>';
 	}
 
-	private static function render_notices() {
+	public static function render_notices() {
 		$notices = get_transient( self::notice_key() );
 		if ( is_array( $notices ) ) {
 			delete_transient( self::notice_key() );

@@ -22,7 +22,7 @@ class Eventcrawler_Event_Admin {
 
 	public static function register_menu() {
 		$hook = add_submenu_page(
-			Eventcrawler_Admin::PAGE_SLUG,
+			Eventcrawler_Admin::MENU_SLUG,
 			'Veranstaltung hinzufügen',
 			'Veranstaltung hinzufügen',
 			Eventcrawler_Manual_Events::CAPABILITY,

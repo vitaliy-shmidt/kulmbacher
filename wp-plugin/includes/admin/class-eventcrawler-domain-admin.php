@@ -25,7 +25,7 @@ class Eventcrawler_Domain_Admin {
 
 	public static function register_menu() {
 		add_submenu_page(
-			Eventcrawler_Admin::PAGE_SLUG,
+			Eventcrawler_Admin::MENU_SLUG,
 			'Link-Bezeichnungen',
 			'Link-Bezeichnungen',
 			Eventcrawler_Admin::CAPABILITY,
@@ -108,8 +108,9 @@ class Eventcrawler_Domain_Admin {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- reine Ansicht.
 		$edit = isset( $_GET['edit'] ) ? Eventcrawler_Domain_Mappings::get( sanitize_key( wp_unslash( $_GET['edit'] ) ) ) : null;
 		?>
-		<div class="wrap">
+		<div class="wrap eventcrawler-admin">
 			<h1>Link-Bezeichnungen</h1>
+			<?php Eventcrawler_Admin::render_help( 'Hier legen Sie fest, welcher Name im XML-Export nach „Info:“ steht – z. B. „Bad Steben“ statt der technischen Domain „pages.et4.de“. Die gespeicherten Links ändern sich dadurch nicht.' ); ?>
 			<?php self::render_notice(); ?>
 			<?php if ( Eventcrawler_Domain_Mappings::is_corrupt() ) : ?>
 				<div class="notice notice-error"><p>Die gespeicherten Link-Bezeichnungen sind beschädigt (kein gültiges Format). Im XML steht derzeit überall die Domain. Neu angelegte Einträge ersetzen den beschädigten Wert.</p></div>

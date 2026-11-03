@@ -1,9 +1,11 @@
 /**
- * Eventcrawler – Crawler-Steuerung im Admin (docs/06-admin.md, Abschnitt 3).
+ * Eventcrawler – Abruf der Quellen im Admin (docs/06-admin.md, Abschnitte 3 und 16).
  *
  * Eine Quelle = ein Request an admin-ajax.php (action "eventcrawler_crawl_source").
  * "Alle Quellen" arbeitet die Quellen aus window.eventcrawlerCrawl.sources (serverseitig aus dem Adapter-Register)
- * nacheinander ab. Kein Framework, keine hart codierten Quellen.
+ * nacheinander ab. Auslöser: #eventcrawler-crawl-start (mit Auswahlfeld #eventcrawler-crawl-source oder data-source)
+ * und auf der Seite „Quellen“ je Quelle ein Button .eventcrawler-crawl-one[data-source]. Kein Framework, keine hart
+ * codierten Quellen. Technische Fehlermeldungen erscheinen nur unter „Technische Details“.
  */
 ( function () {
 	'use strict';
@@ -19,7 +21,7 @@
 
 	function formatStats( stats ) {
 		return stats.found + ' gefunden, ' + stats['new'] + ' neu, ' + stats.updated + ' aktualisiert, ' +
-			stats.unchanged + ' unverändert, ' + stats.filtered + ' gefiltert, ' + stats.failed + ' fehlerhaft.';
+			stats.unchanged + ' unverändert, ' + stats.filtered + ' gefiltert, ' + stats.failed + ' übersprungen.';
 	}
 
 	function formatDuration( seconds ) {
@@ -27,7 +29,8 @@
 	}
 
 	/**
-	 * Zeigt Zeilen im Fortschrittsbereich an (nur textContent, nie HTML aus Antworten).
+	 * Zeigt Zeilen im Fortschrittsbereich an (nur textContent, nie HTML aus Antworten). Eine Zeile ist ein Text oder
+	 * { text, detail }; "detail" (technische Meldung) steht in einem aufklappbaren Bereich.
 	 */
 	function render( box, type, heading, lines ) {
 		box.className = 'notice inline notice-' + type;
@@ -41,14 +44,26 @@
 		var ul = document.createElement( 'ul' );
 		lines.forEach( function ( line ) {
 			var li = document.createElement( 'li' );
-			li.textContent = line;
+			var text = typeof line === 'string' ? line : String( line && line.text ? line.text : '' );
+			li.appendChild( document.createTextNode( text ) );
+			if ( line && typeof line === 'object' && line.detail ) {
+				var details = document.createElement( 'details' );
+				details.className = 'eventcrawler-tech';
+				var summary = document.createElement( 'summary' );
+				summary.textContent = 'Technische Details';
+				var code = document.createElement( 'code' );
+				code.textContent = String( line.detail );
+				details.appendChild( summary );
+				details.appendChild( code );
+				li.appendChild( details );
+			}
 			ul.appendChild( li );
 		} );
 		box.appendChild( ul );
 	}
 
 	/**
-	 * Crawlt genau eine Quelle. Liefert immer ein Ergebnisobjekt (ok + stats oder ok=false + message), wirft nie.
+	 * Ruft genau eine Quelle ab. Liefert immer ein Ergebnisobjekt (ok + stats oder ok=false + message), wirft nie.
 	 */
 	function crawlOne( source ) {
 		var body = new FormData();
@@ -92,10 +107,21 @@
 			} );
 	}
 
+	function triggers() {
+		var list = Array.prototype.slice.call( document.querySelectorAll( '.eventcrawler-crawl-one' ) );
+		[ el( 'eventcrawler-crawl-start' ), el( 'eventcrawler-crawl-source' ) ].forEach( function ( node ) {
+			if ( node ) {
+				list.push( node );
+			}
+		} );
+		return list;
+	}
+
 	function setBusy( busy ) {
 		running = busy;
-		el( 'eventcrawler-crawl-start' ).disabled = busy;
-		el( 'eventcrawler-crawl-source' ).disabled = busy;
+		triggers().forEach( function ( node ) {
+			node.disabled = busy;
+		} );
 	}
 
 	/**
@@ -111,9 +137,9 @@
 				var r = results[ i ];
 				if ( r ) {
 					return r.ok ? '✓ ' + source.label + ': ' + formatStats( r.stats ) + formatDuration( r.duration )
-						: '✗ ' + source.label + ': fehlgeschlagen – ' + r.message + formatDuration( r.duration );
+						: { text: '✗ ' + source.label + ': Abruf fehlgeschlagen. Vorhandene Veranstaltungen bleiben erhalten.' + formatDuration( r.duration ), detail: r.message };
 				}
-				return i === current ? '→ ' + source.label + ' wird verarbeitet …' : '… ' + source.label + ' wartet';
+				return i === current ? '→ ' + source.label + ' wird abgerufen …' : '… ' + source.label + ' wartet';
 			} );
 		}
 
@@ -121,7 +147,7 @@
 			if ( i >= sources.length ) {
 				return Promise.resolve();
 			}
-			render( box, 'info', 'Crawler läuft – Quelle ' + ( i + 1 ) + ' von ' + sources.length + ': ' + sources[ i ].label, progressLines( i ) );
+			render( box, 'info', 'Abruf läuft – Quelle ' + ( i + 1 ) + ' von ' + sources.length + ': ' + sources[ i ].label + '. Bitte das Fenster offen lassen.', progressLines( i ) );
 			return crawlOne( sources[ i ] ).then( function ( result ) {
 				results[ i ] = result;
 				return next( i + 1 ); // Fehler einer Quelle hält die nächste nicht auf.
@@ -140,47 +166,47 @@
 			var type = failedSources > 0 ? 'error' : ( total.failed > 0 ? 'warning' : 'success' );
 			var heading;
 			if ( single ) {
-				heading = ok.length ? 'Crawler abgeschlossen (' + sources[ 0 ].label + '): ' + formatStats( total )
-					: 'Crawler fehlgeschlagen (' + sources[ 0 ].label + ').';
+				heading = ok.length ? 'Abruf abgeschlossen (' + sources[ 0 ].label + '): ' + formatStats( total )
+					: 'Abruf fehlgeschlagen (' + sources[ 0 ].label + '). Vorhandene Veranstaltungen bleiben erhalten.';
 			} else {
-				// "fehlerhaft" = einzelne Einträge; fehlgeschlagene Quellen werden getrennt genannt.
-				heading = 'Crawler abgeschlossen: ' + ok.length + ' von ' + results.length + ' Quellen erfolgreich' +
-					( failedSources ? ' (' + failedSources + ' fehlgeschlagen)' : '' ) + '. Summe der erfolgreichen Quellen: ' + formatStats( total );
+				// "übersprungen" = einzelne unvollständige Einträge; fehlgeschlagene Quellen werden getrennt genannt.
+				heading = 'Abruf abgeschlossen: ' + ok.length + ' von ' + results.length + ' Quellen erfolgreich' +
+					( failedSources ? ' (' + failedSources + ' fehlgeschlagen)' : '' ) + '. Summe: ' + formatStats( total );
 			}
 			return { type: type, heading: heading, lines: progressLines( -1 ) };
 		} );
 	}
 
-	function start() {
+	function start( choice ) {
 		if ( running ) {
 			return; // Doppelklick
 		}
-		var choice = el( 'eventcrawler-crawl-source' ).value;
 		var sources = choice === 'all' ? config.sources : config.sources.filter( function ( s ) { return s.id === choice; } );
-		if ( ! sources.length ) {
+		if ( ! sources.length || ! el( 'eventcrawler-crawl-progress' ) ) {
 			return;
 		}
 
 		setBusy( true );
 		run( sources ).then( function ( summary ) {
-			// Liste neu laden; die Zusammenfassung überlebt den Reload nur im Browser (sessionStorage, kein Server-Status).
+			// Seite neu laden (Zahlen/Status aktuell); die Zusammenfassung überlebt den Reload nur im Browser.
 			try {
 				window.sessionStorage.setItem( STORAGE_KEY, JSON.stringify( summary ) );
 				window.location.reload();
 				return;
 			} catch ( e ) {
-				render( el( 'eventcrawler-crawl-progress' ), summary.type, summary.heading + ' Liste bitte neu laden.', summary.lines );
+				render( el( 'eventcrawler-crawl-progress' ), summary.type, summary.heading + ' Seite bitte neu laden.', summary.lines );
 			}
 			setBusy( false );
 		} ).catch( function ( error ) {
-			render( el( 'eventcrawler-crawl-progress' ), 'error', 'Crawler abgebrochen: ' + ( error && error.message ? error.message : 'unbekannter Fehler' ), [] );
+			render( el( 'eventcrawler-crawl-progress' ), 'error', 'Abruf abgebrochen.', [ { text: 'Unerwarteter Fehler im Browser.', detail: error && error.message ? error.message : 'unbekannt' } ] );
 			setBusy( false );
 		} );
 	}
 
 	function init() {
 		var button = el( 'eventcrawler-crawl-start' );
-		if ( ! button || ! config || ! Array.isArray( config.sources ) ) {
+		var box = el( 'eventcrawler-crawl-progress' );
+		if ( ! box || ! config || ! Array.isArray( config.sources ) ) {
 			return;
 		}
 		// Zusammenfassung des letzten Laufs nach dem Reload anzeigen (einmalig).
@@ -189,13 +215,25 @@
 			if ( stored ) {
 				window.sessionStorage.removeItem( STORAGE_KEY );
 				var summary = JSON.parse( stored );
-				render( el( 'eventcrawler-crawl-progress' ), summary.type, summary.heading, summary.lines );
+				render( box, summary.type, summary.heading, summary.lines );
 			}
 		} catch ( e ) {
 			// sessionStorage nicht verfügbar: nichts anzeigen.
 		}
-		button.addEventListener( 'click', start );
-		button.disabled = false;
+		if ( button ) {
+			button.addEventListener( 'click', function () {
+				var select = el( 'eventcrawler-crawl-source' );
+				start( select ? select.value : ( button.getAttribute( 'data-source' ) || 'all' ) );
+			} );
+		}
+		Array.prototype.forEach.call( document.querySelectorAll( '.eventcrawler-crawl-one' ), function ( node ) {
+			node.addEventListener( 'click', function () {
+				start( node.getAttribute( 'data-source' ) || '' );
+			} );
+		} );
+		triggers().forEach( function ( node ) {
+			node.disabled = false;
+		} );
 	}
 
 	if ( document.readyState === 'loading' ) {
@@ -218,6 +256,21 @@
 	var config = window.eventcrawlerDetails;
 	var TEXT_FIELDS = [ 'title', 'description', 'venue_name', 'venue_address', 'city' ]; // Fließtext, keine Monospace-Schrift
 	var URL_FIELDS = [ 'event_url', 'source_url' ];
+	// Redaktionell relevante Felder zuerst, mit deutscher Bezeichnung; alles andere unter „Technische Informationen“.
+	var LABELS = {
+		title: 'Titel',
+		description: 'Beschreibung',
+		start_date: 'Beginn – Datum',
+		start_time: 'Beginn – Uhrzeit',
+		end_date: 'Ende – Datum',
+		end_time: 'Ende – Uhrzeit',
+		all_day: 'Ganztägig',
+		venue_name: 'Veranstaltungsort',
+		venue_address: 'Adresse',
+		city: 'Stadt',
+		event_url: 'Webseiten-Link',
+		source: 'Quelle'
+	};
 	var modal = null; // { root, dialog, title, body, copy, copyStatus }
 	var lastFocus = null;
 	var requestId = 0;
@@ -244,7 +297,7 @@
 		dialog.tabIndex = -1;
 
 		var header = make( 'div', 'eventcrawler-modal__header' );
-		var title = make( 'h2', '', 'Event DB-Daten' );
+		var title = make( 'h2', '', 'Veranstaltungsdetails' );
 		title.id = 'eventcrawler-modal-title';
 		var x = make( 'button', 'eventcrawler-modal__x', '×' );
 		x.type = 'button';
@@ -322,7 +375,7 @@
 	function show( eventId ) {
 		modal = modal || build();
 		lastFocus = document.activeElement;
-		modal.title.textContent = 'Event DB-Daten (ID ' + eventId + ')';
+		modal.title.textContent = 'Veranstaltungsdetails (ID ' + eventId + ')';
 		setStatus( 'Lade Daten…', false );
 		modal.copy.disabled = true;
 		modal.copyStatus.textContent = '';
@@ -370,14 +423,49 @@
 		return dd;
 	}
 
-	function renderFields( fields ) {
+	function renderFields( fields, seo ) {
 		modal.body.textContent = '';
-		var dl = make( 'dl', 'eventcrawler-db-fields' );
+		var byName = {};
 		fields.forEach( function ( field ) {
-			dl.appendChild( make( 'dt', '', String( field[ 0 ] ) ) );
-			dl.appendChild( renderValue( String( field[ 0 ] ), field[ 1 ] === null ? null : String( field[ 1 ] ) ) );
+			byName[ String( field[ 0 ] ) ] = field[ 1 ] === null ? null : String( field[ 1 ] );
+		} );
+
+		var dl = make( 'dl', 'eventcrawler-db-fields' );
+		Object.keys( LABELS ).forEach( function ( name ) {
+			if ( ! Object.prototype.hasOwnProperty.call( byName, name ) ) {
+				return;
+			}
+			dl.appendChild( make( 'dt', '', LABELS[ name ] ) );
+			dl.appendChild( renderValue( name, byName[ name ] ) );
 		} );
 		modal.body.appendChild( dl );
+
+		if ( Array.isArray( seo ) && seo.length ) {
+			var seoBox = make( 'div', 'eventcrawler-modal__seo' );
+			seoBox.appendChild( make( 'h3', '', 'SEO' ) );
+			var ul = make( 'ul', 'eventcrawler-checklist' );
+			seo.forEach( function ( item ) {
+				var li = make( 'li', item && item.ok ? '' : 'is-warning', String( item && item.label ? item.label : '' ) );
+				ul.appendChild( li );
+			} );
+			seoBox.appendChild( ul );
+			modal.body.appendChild( seoBox );
+		}
+
+		// Technische Felder (IDs, Schlüssel, Prüfsumme, Zeitstempel) aufklappbar, genau wie gespeichert.
+		var tech = make( 'details', 'eventcrawler-tech' );
+		tech.appendChild( make( 'summary', '', 'Technische Informationen' ) );
+		var techDl = make( 'dl', 'eventcrawler-db-fields' );
+		fields.forEach( function ( field ) {
+			var name = String( field[ 0 ] );
+			if ( Object.prototype.hasOwnProperty.call( LABELS, name ) ) {
+				return;
+			}
+			techDl.appendChild( make( 'dt', '', name ) );
+			techDl.appendChild( renderValue( name, field[ 1 ] === null ? null : String( field[ 1 ] ) ) );
+		} );
+		tech.appendChild( techDl );
+		modal.body.appendChild( tech );
 		modal.body.scrollTop = 0;
 	}
 
@@ -398,7 +486,7 @@
 						json = null;
 					}
 					if ( json && json.success === true && json.data && Array.isArray( json.data.fields ) ) {
-						return { ok: true, fields: json.data.fields };
+						return { ok: true, fields: json.data.fields, seo: json.data.seo };
 					}
 					if ( response.status === 404 ) {
 						return { ok: false, message: 'Das Event existiert nicht (mehr). Bitte die Liste neu laden.' };
@@ -418,7 +506,7 @@
 				}
 				if ( result.ok ) {
 					currentFields = result.fields;
-					renderFields( result.fields );
+					renderFields( result.fields, result.seo );
 					modal.copy.disabled = false;
 				} else {
 					setStatus( 'Event konnte nicht geladen werden. ' + result.message, true );

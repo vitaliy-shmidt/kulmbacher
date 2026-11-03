@@ -60,5 +60,7 @@ if ( is_admin() ) {
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-wpem-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-settings-admin.php';
 	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-import-admin.php';
+	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-sources-admin.php';
+	require_once EVENTCRAWLER_PATH . 'includes/admin/class-eventcrawler-dashboard-admin.php';
 	Eventcrawler_Admin::init();
 }

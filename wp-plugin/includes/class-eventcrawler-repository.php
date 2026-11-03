@@ -280,6 +280,20 @@ class Eventcrawler_Repository {
 	}
 
 	/**
+	 * Anzahl der Termine je Quelle (Übersicht, Quellen-Seite). Eine Abfrage über den Index source_external.
+	 *
+	 * @return int[] Quelle => Anzahl.
+	 */
+	public function count_by_source() {
+		$rows   = $this->wpdb->get_results( "SELECT source, COUNT(*) AS n FROM {$this->table} GROUP BY source", ARRAY_A );
+		$counts = array();
+		foreach ( $rows as $row ) {
+			$counts[ $row['source'] ] = (int) $row['n'];
+		}
+		return $counts;
+	}
+
+	/**
 	 * Jahre, in denen Events beginnen, aufsteigend (für die Jahr-Auswahl).
 	 *
 	 * @return int[]

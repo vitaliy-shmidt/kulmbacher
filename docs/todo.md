@@ -9,6 +9,9 @@ Stand: 2026-10-29 (WPEM-Ersatz: Frontend, manuelle Termine, Übernahme; Gestaltu
 - [x] CSV-/XML-Import in die Eventcrawler-Tabelle mit Mapping, Probelauf, idempotentem Matching, verständlichen
       Fehlern, XXE-Schutz (A104, 11-import.md)
 - [ ] **Kunde:** echte Importdatei der Redaktion testen (Spaltennamen, Datumsformat, Zeichensatz)
+- [x] Admin-UX überarbeitet: Übersicht, Quellen mit Statuskarten, Export, Hilfe, Hilfetexte, deutsche Begriffe,
+      technische Details eingeklappt (A105, 06-admin.md Abschnitte 16–18)
+- [ ] **Kunde:** Redaktion (Katharina) die neue Oberfläche ansehen lassen; Begriffe/Hilfetexte nachschärfen
 
 ## WPEM-Ersatz (2026-10-28) ← NÄCHSTER SCHRITT
 

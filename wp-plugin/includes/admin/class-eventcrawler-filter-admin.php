@@ -25,7 +25,7 @@ class Eventcrawler_Filter_Admin {
 
 	public static function register_menu() {
 		add_submenu_page(
-			Eventcrawler_Admin::PAGE_SLUG,
+			Eventcrawler_Admin::MENU_SLUG,
 			'Filterregeln',
 			'Filterregeln',
 			Eventcrawler_Admin::CAPABILITY,
@@ -114,15 +114,16 @@ class Eventcrawler_Filter_Admin {
 		$test = isset( $_GET['test_text'] ) ? sanitize_text_field( wp_unslash( $_GET['test_text'] ) ) : '';
 		// phpcs:enable
 		?>
-		<div class="wrap">
+		<div class="wrap eventcrawler-admin">
 			<h1>Filterregeln</h1>
+			<?php Eventcrawler_Admin::render_help( 'Diese Regeln verhindern, dass bestimmte Veranstaltungen beim Abrufen gespeichert werden (z. B. Stammtische oder politische Termine). Neue Regeln löschen keine bereits gespeicherten Veranstaltungen. Manuelle und importierte Termine werden nicht gefiltert.' ); ?>
 			<?php self::render_notice(); ?>
 			<?php if ( Eventcrawler_Filter_Rules::is_corrupt() ) : ?>
 				<div class="notice notice-error"><p>Die gespeicherten Filterregeln sind beschädigt (kein gültiges Format). Derzeit ist <strong>keine</strong> Regel aktiv. Neu angelegte Regeln ersetzen den beschädigten Wert.</p></div>
 			<?php endif; ?>
 			<p class="description">
 				Ausschlussbegriffe gelten für <strong>alle Quellen</strong>. Geprüft werden Titel und Beschreibung, ohne
-				Unterscheidung von Groß- und Kleinschreibung. Änderungen wirken beim <strong>nächsten Crawl</strong>;
+				Unterscheidung von Groß- und Kleinschreibung. Änderungen wirken beim <strong>nächsten Abruf</strong>;
 				bereits gespeicherte Veranstaltungen werden nicht gelöscht oder verändert. Ortsregeln (z. B. nur
 				Nürnberg/Fürth) werden hier nicht verwaltet.
 			</p>

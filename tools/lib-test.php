@@ -93,9 +93,16 @@ function ec_call( $callback, array $post = array(), $method = 'POST', array $get
 	$_GET                      = $get;
 	$_SERVER['REQUEST_METHOD'] = $method;
 
+	$GLOBALS['ec_status_header'] = 200;
+	$status_filter               = function ( $header, $code ) {
+		$GLOBALS['ec_status_header'] = (int) $code; // z. B. wp_send_json_error( …, 403 )
+		return $header;
+	};
+	add_filter( 'status_header', $status_filter, 999, 2 );
 	$die = function () {
 		return function ( $message, $title = '', $args = array() ) {
-			$status = is_array( $args ) && isset( $args['response'] ) ? $args['response'] : 500;
+			$status = is_array( $args ) && isset( $args['response'] ) ? $args['response'] : $GLOBALS['ec_status_header'];
+			$status = $status ? $status : 200;
 			if ( is_wp_error( $message ) ) {
 				$message = $message->get_error_message();
 			}
@@ -130,6 +137,7 @@ function ec_call( $callback, array $post = array(), $method = 'POST', array $get
 	remove_filter( 'wp_die_handler', $die, 999 );
 	remove_filter( 'wp_die_ajax_handler', $die, 999 );
 	remove_filter( 'wp_redirect', $redirect, 999 );
+	remove_filter( 'status_header', $status_filter, 999 );
 	$_POST    = array();
 	$_GET     = array();
 	$_REQUEST = array();

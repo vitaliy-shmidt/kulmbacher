@@ -210,10 +210,10 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 | Hauptdatei | `wp-plugin/eventcrawler.php` (in WordPress: `wp-content/plugins/eventcrawler/eventcrawler.php`) |
 | Version | 0.2.0, Schema-Version 3 (`EVENTCRAWLER_DB_VERSION`) |
 | Tabelle | `{$wpdb->prefix}eventcrawler_events` |
-| Optionen | `eventcrawler_settings` (Einstellungen: WPEM-Kompatibilität, SEO), `eventcrawler_test_page_id` (Frontend-Testseite), `eventcrawler_import_sources` (Importquellen), `eventcrawler_last_import` (letzter Import), `eventcrawler_db_version`, `eventcrawler_filter_rules` (Filterregeln, 05-filter.md), `eventcrawler_filter_rules_version` (Stand der Default-Regeln), `eventcrawler_export_domain_mappings` (Link-Bezeichnungen, 07-export.md Abschnitt 13) |
+| Optionen | `eventcrawler_settings` (Einstellungen: WPEM-Kompatibilität, SEO), `eventcrawler_source_status` (letzter Abruf je Quelle), `eventcrawler_test_page_id` (Frontend-Testseite), `eventcrawler_import_sources` (Importquellen), `eventcrawler_last_import` (letzter Import), `eventcrawler_db_version`, `eventcrawler_filter_rules` (Filterregeln, 05-filter.md), `eventcrawler_filter_rules_version` (Stand der Default-Regeln), `eventcrawler_export_domain_mappings` (Link-Bezeichnungen, 07-export.md Abschnitt 13) |
 | Capability | `manage_options` |
-| Admin-Menü / Seitentitel | „Eventcrawler“ / „Importierte Veranstaltungen“ |
-| Admin-Seiten | `wp-admin/admin.php?page=eventcrawler` (Importierte Veranstaltungen, mit Detail-Modal), `wp-admin/admin.php?page=eventcrawler-filter` (Filterregeln), `wp-admin/admin.php?page=eventcrawler-domains` (Link-Bezeichnungen), `wp-admin/admin.php?page=eventcrawler-event` (Veranstaltung hinzufügen/bearbeiten), `wp-admin/admin.php?page=eventcrawler-wpem` (WPEM-Übernahme, nur mit WPEM-Daten) |
+| Admin-Menü / Startseite | „Eventcrawler“ → „Übersicht“ (seit 2026-11-03; vorher „Importierte Veranstaltungen“) |
+| Admin-Seiten | `admin.php?page=` `eventcrawler-overview` (Übersicht), `eventcrawler` (Veranstaltungen, mit Detail-Modal), `eventcrawler-event` (Veranstaltung hinzufügen/bearbeiten), `eventcrawler-import` (Import), `eventcrawler-sources` (Quellen, Abruf), `eventcrawler-filter` (Filterregeln), `eventcrawler-domains` (Link-Bezeichnungen), `eventcrawler-export` (Export), `eventcrawler-settings` (Einstellungen), `eventcrawler-wpem` (WPEM-Übernahme, nur mit WPEM-Daten), `eventcrawler-help` (Hilfe) |
 | Shortcodes | `[eventcrawler_events]`, `[eventcrawler_calendar]`; Aliase `[events_list]`, `[events_calendar]` nur mit Einstellung „WPEM-Shortcodes übernehmen“ **und** ohne aktives WPEM (Parallelbetrieb, 10-frontend.md Abschnitt 15) |
 | admin-post-Aktionen | `eventcrawler_export`, `eventcrawler_save_event`, `eventcrawler_wpem_migrate`, `eventcrawler_save_settings`, `eventcrawler_create_test_page`, `eventcrawler_import_upload`, `eventcrawler_import_map`, `eventcrawler_import_run` |
 | AJAX-Aktionen | `eventcrawler_crawl_source` (eine Quelle crawlen), `eventcrawler_get_event_details` (gespeicherte Werte eines Events, nur lesend) |
@@ -300,6 +300,11 @@ Erste Ausbaustufe ist ein bewusst kleiner **MVP / Kundendemo**.
 - Tests des CSV-/XML-Imports (Transaktion mit Rollback, Optionen werden wiederhergestellt, Prüfsumme der Tabelle):
   ```
   C:\xampp\php\php.exe tools\test-import.php <pfad\zu\wp-load.php>
+  ```
+- Tests der Admin-Oberfläche (Navigation, Rechte, Übersicht, Quellen-Status mit simuliertem Verbindungsfehler –
+  keine echten Abrufe –, Hilfe, Export, Liste, Detail-Modal; Transaktion mit Rollback):
+  ```
+  C:\xampp\php\php.exe tools\test-admin.php <pfad\zu\wp-load.php>
   ```
 - Tests Frontend, manuelle Termine und WPEM-Übernahme (alle Änderungen in einer Transaktion mit Rollback, Prüfsumme
   der Tabelle vorher/nachher; legt bei Bedarf CPT/Taxonomie von WPEM nur im Testprozess an):
