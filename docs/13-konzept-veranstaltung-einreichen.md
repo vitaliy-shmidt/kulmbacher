@@ -2,7 +2,7 @@
 
 **Projekt:** Kulmbacher Land / Eventcrawler  
 **Stand:** 11. November 2026  
-**Status:** Diskussionsentwurf für Katharina und den Verlag – **noch nicht umgesetzt und nicht freigegeben**
+**Status:** Diskussionsentwurf für die Redaktion und den Verlag – **noch nicht umgesetzt und nicht freigegeben**
 
 > **Idee in einem Satz:** Jeder kann auf kulmbacher.land ohne Registrierung eine Veranstaltung melden. Die Redaktion prüft und entscheidet über die Veröffentlichung. Wer seine Veranstaltung im gedruckten Kulmbacher Land hervorheben oder zusätzlich Werbung schalten möchte, kann unverbindlich Interesse anmelden.
 
@@ -153,7 +153,7 @@ Dies ist **keine zweite Event-Plattform** und kein Portal mit Benutzerkonten.
 
 Jede technische Etappe braucht Tests, Sicherheitsprüfungen und aktualisierte Dokumentation. **Aktuell ist dies nur ein Vorschlag, kein Entwicklungsauftrag.**
 
-## 9. Fragen für Katharina und den Verlag
+## 9. Fragen für die Redaktion und den Verlag
 
 Diese Punkte sollten wir vor der Umsetzung gemeinsam klären:
 
